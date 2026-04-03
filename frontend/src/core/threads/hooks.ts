@@ -32,6 +32,10 @@ export type ThreadStreamOptions = {
   onToolEnd?: (event: ToolEndEvent) => void;
 };
 
+type SendMessageOptions = {
+  additionalKwargs?: Record<string, unknown>;
+};
+
 function getStreamErrorMessage(error: unknown): string {
   if (typeof error === "string" && error.trim()) {
     return error;
@@ -204,6 +208,7 @@ export function useThreadStream({
       threadId: string,
       message: PromptInputMessage,
       extraContext?: Record<string, unknown>,
+      options?: SendMessageOptions,
     ) => {
       if (sendInFlightRef.current) {
         return;
@@ -224,17 +229,23 @@ export function useThreadStream({
         }),
       );
 
-      // Create optimistic human message (shown immediately)
-      const optimisticHumanMsg: Message = {
-        type: "human",
-        id: `opt-human-${Date.now()}`,
-        content: text ? [{ type: "text", text }] : "",
-        additional_kwargs:
-          optimisticFiles.length > 0 ? { files: optimisticFiles } : {},
+      const hideFromUI = options?.additionalKwargs?.hide_from_ui === true;
+      const optimisticAdditionalKwargs = {
+        ...options?.additionalKwargs,
+        ...(optimisticFiles.length > 0 ? { files: optimisticFiles } : {}),
       };
 
-      const newOptimistic: Message[] = [optimisticHumanMsg];
-      if (optimisticFiles.length > 0) {
+      const newOptimistic: Message[] = [];
+      if (!hideFromUI) {
+        newOptimistic.push({
+          type: "human",
+          id: `opt-human-${Date.now()}`,
+          content: text ? [{ type: "text", text }] : "",
+          additional_kwargs: optimisticAdditionalKwargs,
+        });
+      }
+
+      if (optimisticFiles.length > 0 && !hideFromUI) {
         // Mock AI message while files are being uploaded
         newOptimistic.push({
           type: "ai",
@@ -355,8 +366,12 @@ export function useThreadStream({
                     text,
                   },
                 ],
-                additional_kwargs:
-                  filesForSubmit.length > 0 ? { files: filesForSubmit } : {},
+                additional_kwargs: {
+                  ...options?.additionalKwargs,
+                  ...(filesForSubmit.length > 0
+                    ? { files: filesForSubmit }
+                    : {}),
+                },
               },
             ],
           },
@@ -429,7 +444,8 @@ export function useThreads(
       // Preserve prior semantics: if a non-positive limit is explicitly provided,
       // delegate to a single search call with the original parameters.
       if (maxResults !== undefined && maxResults <= 0) {
-        const response = await apiClient.threads.search<AgentThreadState>(params);
+        const response =
+          await apiClient.threads.search<AgentThreadState>(params);
         return response as AgentThread[];
       }
 
