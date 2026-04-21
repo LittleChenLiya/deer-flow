@@ -6,6 +6,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import ToolRuntime
 from langgraph.types import Command
 
+from deerflow.config.agents_config import load_agent_config_data
 from deerflow.config.paths import get_paths
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,8 @@ def setup_agent(
 
         if agent_name:
             # If agent_name is provided, we are creating a custom agent in the agents/ directory
-            config_data: dict = {"name": agent_name}
+            config_data: dict = dict(load_agent_config_data(agent_name) or {})
+            config_data["name"] = agent_name
             if description:
                 config_data["description"] = description
 

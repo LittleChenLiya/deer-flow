@@ -36,6 +36,8 @@ export function AgentCard({ agent }: AgentCardProps) {
   const router = useRouter();
   const deleteAgent = useDeleteAgent();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const displayName = agent.display_name?.trim();
+  const showSlug = Boolean(displayName && displayName !== agent.name);
 
   function handleChat() {
     router.push(`/workspace/agents/${agent.name}/chats/new`);
@@ -62,8 +64,13 @@ export function AgentCard({ agent }: AgentCardProps) {
               </div>
               <div className="min-w-0">
                 <CardTitle className="truncate text-base">
-                  {agent.name}
+                  {displayName ?? agent.name}
                 </CardTitle>
+                {showSlug && (
+                  <p className="text-muted-foreground truncate text-xs">
+                    {agent.name}
+                  </p>
+                )}
                 {agent.model && (
                   <Badge variant="secondary" className="mt-0.5 text-xs">
                     {agent.model}

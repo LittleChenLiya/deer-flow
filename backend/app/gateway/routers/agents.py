@@ -6,9 +6,17 @@ import shutil
 
 import yaml
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-from deerflow.config.agents_config import AgentConfig, list_custom_agents, load_agent_config, load_agent_soul
+from deerflow.config.agents_config import (
+    AGENT_DISPLAY_NAME_MAX_LENGTH,
+    AgentConfig,
+    _normalize_display_name,
+    list_custom_agents,
+    load_agent_config,
+    load_agent_config_data,
+    load_agent_soul,
+)
 from deerflow.config.paths import get_paths
 
 logger = logging.getLogger(__name__)
@@ -22,8 +30,10 @@ class AgentResponse(BaseModel):
 
     name: str = Field(..., description="Agent name (hyphen-case)")
     description: str = Field(default="", description="Agent description")
+    display_name: str | None = Field(default=None, description="Optional human-readable name")
     model: str | None = Field(default=None, description="Optional model override")
     tool_groups: list[str] | None = Field(default=None, description="Optional tool group whitelist")
+    skills: list[str] | None = Field(default=None, description="Optional skills whitelist")
     soul: str | None = Field(default=None, description="SOUL.md content")
 
 
@@ -38,18 +48,32 @@ class AgentCreateRequest(BaseModel):
 
     name: str = Field(..., description="Agent name (must match ^[A-Za-z0-9-]+$, stored as lowercase)")
     description: str = Field(default="", description="Agent description")
+    display_name: str | None = Field(default=None, max_length=AGENT_DISPLAY_NAME_MAX_LENGTH, description="Optional human-readable name")
     model: str | None = Field(default=None, description="Optional model override")
     tool_groups: list[str] | None = Field(default=None, description="Optional tool group whitelist")
+    skills: list[str] | None = Field(default=None, description="Optional skills whitelist")
     soul: str = Field(default="", description="SOUL.md content — agent personality and behavioral guardrails")
+
+    @field_validator("display_name", mode="before")
+    @classmethod
+    def _normalize_display_name(cls, value: str | None) -> str | None:
+        return _normalize_display_name(value)
 
 
 class AgentUpdateRequest(BaseModel):
     """Request body for updating a custom agent."""
 
     description: str | None = Field(default=None, description="Updated description")
+    display_name: str | None = Field(default=None, max_length=AGENT_DISPLAY_NAME_MAX_LENGTH, description="Updated human-readable name")
     model: str | None = Field(default=None, description="Updated model override")
     tool_groups: list[str] | None = Field(default=None, description="Updated tool group whitelist")
+    skills: list[str] | None = Field(default=None, description="Updated skills whitelist")
     soul: str | None = Field(default=None, description="Updated SOUL.md content")
+
+    @field_validator("display_name", mode="before")
+    @classmethod
+    def _normalize_display_name(cls, value: str | None) -> str | None:
+        return _normalize_display_name(value)
 
 
 def _validate_agent_name(name: str) -> None:
@@ -82,8 +106,10 @@ def _agent_config_to_response(agent_cfg: AgentConfig, include_soul: bool = False
     return AgentResponse(
         name=agent_cfg.name,
         description=agent_cfg.description,
+        display_name=agent_cfg.display_name,
         model=agent_cfg.model,
         tool_groups=agent_cfg.tool_groups,
+        skills=agent_cfg.skills,
         soul=soul,
     )
 
@@ -193,13 +219,8 @@ async def create_agent_endpoint(request: AgentCreateRequest) -> AgentResponse:
         agent_dir.mkdir(parents=True, exist_ok=True)
 
         # Write config.yaml
-        config_data: dict = {"name": normalized_name}
-        if request.description:
-            config_data["description"] = request.description
-        if request.model is not None:
-            config_data["model"] = request.model
-        if request.tool_groups is not None:
-            config_data["tool_groups"] = request.tool_groups
+        config_data: dict = request.model_dump(exclude_none=True, exclude={"soul"})
+        config_data["name"] = normalized_name
 
         config_file = agent_dir / "config.yaml"
         with open(config_file, "w", encoding="utf-8") as f:
@@ -255,20 +276,41 @@ async def update_agent(name: str, request: AgentUpdateRequest) -> AgentResponse:
 
     try:
         # Update config if any config fields changed
-        config_changed = any(v is not None for v in [request.description, request.model, request.tool_groups])
+        config_changed = bool({"description", "display_name", "model", "tool_groups", "skills"} & request.model_fields_set)
 
         if config_changed:
-            updated: dict = {
-                "name": agent_cfg.name,
-                "description": request.description if request.description is not None else agent_cfg.description,
-            }
-            new_model = request.model if request.model is not None else agent_cfg.model
-            if new_model is not None:
-                updated["model"] = new_model
+            updated: dict = dict(load_agent_config_data(name) or {})
+            updated["name"] = agent_cfg.name
 
-            new_tool_groups = request.tool_groups if request.tool_groups is not None else agent_cfg.tool_groups
-            if new_tool_groups is not None:
-                updated["tool_groups"] = new_tool_groups
+            if "description" in request.model_fields_set:
+                if request.description is None:
+                    updated.pop("description", None)
+                else:
+                    updated["description"] = request.description
+
+            if "display_name" in request.model_fields_set:
+                if request.display_name is None:
+                    updated.pop("display_name", None)
+                else:
+                    updated["display_name"] = request.display_name
+
+            if "model" in request.model_fields_set:
+                if request.model is None:
+                    updated.pop("model", None)
+                else:
+                    updated["model"] = request.model
+
+            if "tool_groups" in request.model_fields_set:
+                if request.tool_groups is None:
+                    updated.pop("tool_groups", None)
+                else:
+                    updated["tool_groups"] = request.tool_groups
+
+            if "skills" in request.model_fields_set:
+                if request.skills is None:
+                    updated.pop("skills", None)
+                else:
+                    updated["skills"] = request.skills
 
             config_file = agent_dir / "config.yaml"
             with open(config_file, "w", encoding="utf-8") as f:

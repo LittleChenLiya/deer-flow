@@ -86,12 +86,14 @@ class TestAgentConfig:
         cfg = AgentConfig(
             name="code-reviewer",
             description="Specialized for code review",
+            display_name="Code Reviewer",
             model="deepseek-v3",
             tool_groups=["file:read", "bash"],
         )
         assert cfg.name == "code-reviewer"
         assert cfg.model == "deepseek-v3"
         assert cfg.tool_groups == ["file:read", "bash"]
+        assert cfg.display_name == "Code Reviewer"
 
     def test_config_from_dict(self):
         from deerflow.config.agents_config import AgentConfig
@@ -101,6 +103,14 @@ class TestAgentConfig:
         assert cfg.name == "test-agent"
         assert cfg.model == "gpt-4"
         assert cfg.tool_groups is None
+
+    def test_display_name_is_trimmed_before_validation(self):
+        from deerflow.config.agents_config import AgentConfig
+
+        display_name = f" {'a' * 100} "
+        cfg = AgentConfig(name="trimmed-agent", display_name=display_name)
+
+        assert cfg.display_name == "a" * 100
 
 
 # ===========================================================================
@@ -506,6 +516,61 @@ class TestAgentsAPI:
         data = response.json()
         assert data["model"] == "deepseek-v3"
         assert data["tool_groups"] == ["file:read", "bash"]
+
+    def test_create_agent_with_display_name(self, agent_client, tmp_path):
+        payload = {
+            "name": "friendly-agent",
+            "display_name": " Friendly Agent ",
+            "soul": "You are friendly.",
+        }
+        response = agent_client.post("/api/agents", json=payload)
+        assert response.status_code == 201
+        data = response.json()
+        assert data["display_name"] == "Friendly Agent"
+
+        config = yaml.safe_load((tmp_path / "agents" / "friendly-agent" / "config.yaml").read_text())
+        assert config["display_name"] == "Friendly Agent"
+
+    def test_update_agent_preserves_existing_config_fields(self, agent_client, tmp_path):
+        agent_client.post(
+            "/api/agents",
+            json={
+                "name": "preserve-me",
+                "display_name": " Preserve Me ",
+                "description": "old desc",
+                "soul": "soul",
+            },
+        )
+
+        config_file = tmp_path / "agents" / "preserve-me" / "config.yaml"
+        config = yaml.safe_load(config_file.read_text())
+        config["skills"] = ["file:read"]
+        config["custom_field"] = "keep-me"
+        config_file.write_text(yaml.safe_dump(config, default_flow_style=False, allow_unicode=True), encoding="utf-8")
+
+        response = agent_client.put("/api/agents/preserve-me", json={"description": "new desc"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["description"] == "new desc"
+        assert data["display_name"] == "Preserve Me"
+        assert data["skills"] == ["file:read"]
+
+        updated_config = yaml.safe_load(config_file.read_text())
+        assert updated_config["description"] == "new desc"
+        assert updated_config["display_name"] == "Preserve Me"
+        assert updated_config["skills"] == ["file:read"]
+        assert updated_config["custom_field"] == "keep-me"
+
+    def test_request_models_trim_display_name(self):
+        from app.gateway.routers.agents import AgentCreateRequest, AgentUpdateRequest
+
+        display_name = f" {'b' * 100} "
+
+        create_request = AgentCreateRequest(name="trim-create", display_name=display_name)
+        update_request = AgentUpdateRequest(display_name=display_name)
+
+        assert create_request.display_name == "b" * 100
+        assert update_request.display_name == "b" * 100
 
     def test_create_persists_files_on_disk(self, agent_client, tmp_path):
         agent_client.post("/api/agents", json={"name": "disk-check", "soul": "disk soul"})

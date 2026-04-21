@@ -5,7 +5,7 @@ import re
 from typing import Any
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from deerflow.config.paths import get_paths
 
@@ -13,6 +13,15 @@ logger = logging.getLogger(__name__)
 
 SOUL_FILENAME = "SOUL.md"
 AGENT_NAME_PATTERN = re.compile(r"^[A-Za-z0-9-]+$")
+AGENT_DISPLAY_NAME_MAX_LENGTH = 100
+
+
+def _normalize_display_name(display_name: str | None) -> str | None:
+    """Trim display names and collapse empty values to None."""
+    if display_name is None:
+        return None
+    normalized = display_name.strip()
+    return normalized or None
 
 
 class AgentConfig(BaseModel):
@@ -20,6 +29,7 @@ class AgentConfig(BaseModel):
 
     name: str
     description: str = ""
+    display_name: str | None = Field(default=None, max_length=AGENT_DISPLAY_NAME_MAX_LENGTH)
     model: str | None = None
     tool_groups: list[str] | None = None
     # skills controls which skills are loaded into the agent's prompt:
@@ -28,19 +38,17 @@ class AgentConfig(BaseModel):
     # - ["skill1", "skill2"]: load only the specified skills
     skills: list[str] | None = None
 
+    @field_validator("display_name", mode="before")
+    @classmethod
+    def _normalize_display_name(cls, value: str | None) -> str | None:
+        return _normalize_display_name(value)
 
-def load_agent_config(name: str | None) -> AgentConfig | None:
-    """Load the custom or default agent's config from its directory.
 
-    Args:
-        name: The agent name.
+def load_agent_config_data(name: str | None) -> dict[str, Any] | None:
+    """Load a custom or default agent config as raw YAML data.
 
-    Returns:
-        AgentConfig instance.
-
-    Raises:
-        FileNotFoundError: If the agent directory or config.yaml does not exist.
-        ValueError: If config.yaml cannot be parsed.
+    The returned dictionary preserves unknown fields so callers can merge
+    updates without dropping unsupported keys from config.yaml.
     """
 
     if name is None:
@@ -63,9 +71,29 @@ def load_agent_config(name: str | None) -> AgentConfig | None:
     except yaml.YAMLError as e:
         raise ValueError(f"Failed to parse agent config {config_file}: {e}") from e
 
-    # Ensure name is set from directory name if not in file
     if "name" not in data:
         data["name"] = name
+
+    return data
+
+
+def load_agent_config(name: str | None) -> AgentConfig | None:
+    """Load the custom or default agent's config from its directory.
+
+    Args:
+        name: The agent name.
+
+    Returns:
+        AgentConfig instance.
+
+    Raises:
+        FileNotFoundError: If the agent directory or config.yaml does not exist.
+        ValueError: If config.yaml cannot be parsed.
+    """
+
+    data = load_agent_config_data(name)
+    if data is None:
+        return None
 
     # Strip unknown fields before passing to Pydantic (e.g. legacy prompt_file)
     known_fields = set(AgentConfig.model_fields.keys())
