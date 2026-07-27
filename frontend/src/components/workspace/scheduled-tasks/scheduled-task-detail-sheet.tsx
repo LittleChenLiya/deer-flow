@@ -67,8 +67,12 @@ export function ScheduledTaskDetailSheet({
   pauseResumeLabel: string;
 }) {
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-lg">
+    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col sm:max-w-lg"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         {task ? (
           <>
             <SheetHeader>

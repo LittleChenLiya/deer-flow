@@ -2,15 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import {
-  DialogFieldGrid,
-  FormField,
-  ToggleGroupControl,
-  dialogFieldControlClass,
-  readOnlyFieldClass,
-  selectTriggerWrapClass,
-  workspaceFieldFocusClass,
-} from "@/components/component";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -31,8 +23,8 @@ import {
   type CronParts,
   type CronPreset,
   type ScheduleLocale,
+  type Weekday,
 } from "@/core/scheduled-tasks/cron";
-import { cn } from "@/lib/utils";
 
 export type ScheduleValue = {
   schedule_type: "once" | "cron";
@@ -86,56 +78,6 @@ function timezoneOptions(): string[] {
 
 const TIMEZONE_OPTIONS = timezoneOptions();
 
-const fieldInputClass = cn(
-  dialogFieldControlClass,
-  workspaceFieldFocusClass,
-  "w-full min-w-0",
-);
-
-const selectTriggerClass = cn(
-  "w-full min-w-0",
-  selectTriggerWrapClass,
-  dialogFieldControlClass,
-);
-
-const scheduleDetailPanelClass =
-  "border-border/45 bg-background/70 flex flex-col gap-4 rounded-lg border p-3.5 sm:p-4";
-
-function ScheduleTimezoneSelect({
-  timezone,
-  onTimezoneChange,
-  fieldClassName,
-}: {
-  timezone: string;
-  onTimezoneChange: (tz: string) => void;
-  fieldClassName?: string;
-}) {
-  const labels = useI18n().t.scheduledTasks;
-
-  return (
-    <FormField
-      label={labels.fields.timezone}
-      className={cn("min-w-0", fieldClassName)}
-    >
-      <Select value={timezone} onValueChange={onTimezoneChange}>
-        <SelectTrigger
-          className={selectTriggerClass}
-          data-testid="schedule-timezone"
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {TIMEZONE_OPTIONS.map((tzOption) => (
-            <SelectItem key={tzOption} value={tzOption}>
-              {tzOption}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </FormField>
-  );
-}
-
 export function ScheduledTaskScheduleInput({
   initial,
   onChange,
@@ -170,16 +112,11 @@ export function ScheduledTaskScheduleInput({
     initial.timezone || detectBrowserTimezone(),
   );
 
-  // Hold the latest onChange in a ref so the effect below does not depend on
-  // it. This avoids a re-render loop: if the parent passes an inline
-  // onChange (new reference each render), depending on it directly would
-  // re-fire the effect every render and call onChange again, looping.
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
-  // Emit on every change including mount. On mount this syncs the parent with
-  // the browser-detected timezone and the canonicalized cron, so the submitted
-  // value always matches what the user sees in the preview.
+  // Keep callback identity out of the dependency list so inline callbacks do
+  // not create a render loop. The initial emit also syncs detected timezone.
   useEffect(() => {
     if (scheduleType === "once") {
       const runAt = runAtLocal ? zonedLocalToUtcIso(runAtLocal, timezone) : "";
@@ -200,12 +137,12 @@ export function ScheduledTaskScheduleInput({
   }, [scheduleType, preset, parts, runAtLocal, timezone]);
 
   function updateParts(patch: Partial<CronParts>) {
-    setParts((prev) => ({ ...prev, ...patch }));
+    setParts((previous) => ({ ...previous, ...patch }));
   }
 
   function changePreset(next: CronPreset) {
-    setParts((prev) => {
-      const merged = { ...prev };
+    setParts((previous) => {
+      const merged = { ...previous };
       if (next === "weekly" && (merged.weekdays ?? []).length === 0) {
         merged.weekdays = ["mon"];
       }
@@ -213,11 +150,26 @@ export function ScheduledTaskScheduleInput({
         merged.dayOfMonth = 1;
       }
       if (next === "custom" && !merged.raw) {
-        merged.raw = serializeCron("daily", prev);
+        merged.raw = serializeCron("daily", previous);
       }
       return merged;
     });
     setPreset(next);
+  }
+
+  function toggleWeekday(weekday: Weekday) {
+    setParts((previous) => {
+      const active = new Set(previous.weekdays ?? []);
+      if (active.has(weekday)) {
+        active.delete(weekday);
+      } else {
+        active.add(weekday);
+      }
+      return {
+        ...previous,
+        weekdays: WEEKDAYS.filter((candidate) => active.has(candidate)),
+      };
+    });
   }
 
   const preview = describeSchedule(
@@ -225,226 +177,175 @@ export function ScheduledTaskScheduleInput({
     schedLocale,
   );
 
-  const cronPresetDetails = (() => {
-    switch (preset) {
-      case "hourly":
-        return (
-          <DialogFieldGrid>
-            <FormField label={labels.fields.minute} className="min-w-0">
+  return (
+    <div className="flex flex-col gap-3" data-testid="schedule-input">
+      {!scheduleTypeLocked ? (
+        <div className="bg-muted grid grid-cols-2 gap-1 rounded-lg p-1">
+          {(["cron", "once"] as const).map((value) => (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant="ghost"
+              className={
+                scheduleType === value ? "bg-background shadow-sm" : ""
+              }
+              aria-pressed={scheduleType === value}
+              onClick={() => setScheduleType(value)}
+            >
+              {value === "cron"
+                ? labels.scheduleType.cron
+                : labels.scheduleType.once}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+
+      {scheduleType === "cron" ? (
+        <>
+          <label className="space-y-1.5 text-sm">
+            <span className="font-medium">{labels.preset.label}</span>
+            <Select
+              value={preset}
+              onValueChange={(value) => changePreset(value as CronPreset)}
+            >
+              <SelectTrigger className="w-full" data-testid="schedule-preset">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PRESETS.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {labels.preset[value]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+
+          {preset === "hourly" ? (
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">{labels.fields.minute}</span>
               <Input
                 type="number"
                 min={0}
                 max={59}
-                className={fieldInputClass}
                 value={parts.minute ?? 0}
-                onChange={(e) =>
-                  updateParts({ minute: Number(e.target.value) })
+                onChange={(event) =>
+                  updateParts({ minute: Number(event.target.value) })
                 }
               />
-            </FormField>
-            <ScheduleTimezoneSelect
-              timezone={timezone}
-              onTimezoneChange={setTimezone}
-            />
-          </DialogFieldGrid>
-        );
-      case "daily":
-        return (
-          <DialogFieldGrid>
-            <FormField label={labels.fields.time} className="min-w-0">
+            </label>
+          ) : null}
+
+          {preset === "daily" || preset === "weekly" || preset === "monthly" ? (
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">{labels.fields.time}</span>
               <Input
                 type="time"
-                className={fieldInputClass}
                 value={`${pad2(parts.hour ?? 9)}:${pad2(parts.minute ?? 0)}`}
-                onChange={(e) => {
-                  const [h, m] = e.target.value.split(":").map(Number);
-                  updateParts({ hour: h, minute: m });
+                onChange={(event) => {
+                  const [hour, minute] = event.target.value
+                    .split(":")
+                    .map(Number);
+                  updateParts({ hour, minute });
                 }}
               />
-            </FormField>
-            <ScheduleTimezoneSelect
-              timezone={timezone}
-              onTimezoneChange={setTimezone}
-            />
-          </DialogFieldGrid>
-        );
-      case "weekly":
-        return (
-          <div className="flex flex-col gap-4">
-            <DialogFieldGrid>
-              <FormField label={labels.fields.time} className="min-w-0">
-                <Input
-                  type="time"
-                  className={fieldInputClass}
-                  value={`${pad2(parts.hour ?? 9)}:${pad2(parts.minute ?? 0)}`}
-                  onChange={(e) => {
-                    const [h, m] = e.target.value.split(":").map(Number);
-                    updateParts({ hour: h, minute: m });
-                  }}
-                />
-              </FormField>
-              <ScheduleTimezoneSelect
-                timezone={timezone}
-                onTimezoneChange={setTimezone}
-              />
-            </DialogFieldGrid>
-            <FormField label={labels.fields.weekday}>
-              <ToggleGroupControl
-                type="multiple"
-                scrollable
-                value={parts.weekdays ?? ["mon"]}
-                onValueChange={(values) => {
-                  setParts((prev) => ({
-                    ...prev,
-                    weekdays: WEEKDAYS.filter((d) => values.includes(d)),
-                  }));
-                }}
-                items={WEEKDAYS.map((w) => ({
-                  value: w,
-                  label: labels.weekdays[w],
-                  ariaLabel: labels.weekdays[w],
-                }))}
-              />
-            </FormField>
-          </div>
-        );
-      case "monthly":
-        return (
-          <DialogFieldGrid>
-            <FormField label={labels.fields.dayOfMonth} className="min-w-0">
+            </label>
+          ) : null}
+
+          {preset === "weekly" ? (
+            <div className="space-y-1.5">
+              <span className="text-sm font-medium">
+                {labels.fields.weekday}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {WEEKDAYS.map((weekday) => {
+                  const active = (parts.weekdays ?? []).includes(weekday);
+                  return (
+                    <Button
+                      key={weekday}
+                      type="button"
+                      variant={active ? "default" : "outline"}
+                      size="sm"
+                      aria-pressed={active}
+                      onClick={() => toggleWeekday(weekday)}
+                    >
+                      {labels.weekdays[weekday]}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {preset === "monthly" ? (
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">{labels.fields.dayOfMonth}</span>
               <Input
                 type="number"
                 min={1}
                 max={31}
-                className={fieldInputClass}
                 value={parts.dayOfMonth ?? 1}
-                onChange={(e) =>
-                  updateParts({ dayOfMonth: Number(e.target.value) })
+                onChange={(event) =>
+                  updateParts({ dayOfMonth: Number(event.target.value) })
                 }
               />
-            </FormField>
-            <FormField label={labels.fields.time} className="min-w-0">
-              <Input
-                type="time"
-                className={fieldInputClass}
-                value={`${pad2(parts.hour ?? 9)}:${pad2(parts.minute ?? 0)}`}
-                onChange={(e) => {
-                  const [h, m] = e.target.value.split(":").map(Number);
-                  updateParts({ hour: h, minute: m });
-                }}
-              />
-            </FormField>
-            <ScheduleTimezoneSelect
-              timezone={timezone}
-              onTimezoneChange={setTimezone}
-              fieldClassName="sm:col-span-2"
-            />
-          </DialogFieldGrid>
-        );
-      case "custom":
-        return (
-          <div className="flex flex-col gap-4">
-            <FormField label={labels.fields.cron} className="min-w-0">
+            </label>
+          ) : null}
+
+          {preset === "custom" ? (
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">{labels.fields.cron}</span>
               <Input
                 value={parts.raw ?? ""}
-                className={cn(fieldInputClass, "font-mono text-xs")}
-                onChange={(e) => updateParts({ raw: e.target.value })}
+                onChange={(event) => updateParts({ raw: event.target.value })}
                 placeholder={labels.fields.cronPlaceholder}
               />
               <a
                 href="https://crontab.guru/"
                 target="_blank"
                 rel="noreferrer"
-                className="text-muted-foreground mt-1.5 inline-block text-xs hover:underline"
+                className="text-muted-foreground inline-block text-xs hover:underline"
               >
                 {labels.cronHelp} ↗
               </a>
-            </FormField>
-            <ScheduleTimezoneSelect
-              timezone={timezone}
-              onTimezoneChange={setTimezone}
-            />
-          </div>
-        );
-      default:
-        return null;
-    }
-  })();
-
-  return (
-    <div className="flex min-w-0 flex-col gap-3" data-testid="schedule-input">
-      {!scheduleTypeLocked ? (
-        <ToggleGroupControl
-          value={scheduleType}
-          onValueChange={(value) => {
-            if (value === "cron" || value === "once") {
-              setScheduleType(value);
-            }
-          }}
-          items={[
-            { value: "cron", label: labels.scheduleType.cron },
-            { value: "once", label: labels.scheduleType.once },
-          ]}
-        />
-      ) : null}
-
-      {scheduleType === "cron" ? (
-        <div className="flex flex-col gap-3">
-          <FormField label={labels.preset.label} className="min-w-0">
-            <ToggleGroupControl
-              scrollable
-              data-testid="schedule-preset"
-              value={preset}
-              onValueChange={(value) => {
-                if (PRESETS.includes(value as CronPreset)) {
-                  changePreset(value as CronPreset);
-                }
-              }}
-              items={PRESETS.map((p) => ({
-                value: p,
-                label: labels.preset[p],
-              }))}
-            />
-          </FormField>
-          <div className={scheduleDetailPanelClass}>{cronPresetDetails}</div>
-        </div>
+            </label>
+          ) : null}
+        </>
       ) : (
-        <div className={scheduleDetailPanelClass}>
-          <DialogFieldGrid>
-            <FormField
-              label={labels.fields.runAt}
-              htmlFor="schedule-run-at"
-              className="min-w-0 sm:col-span-2"
-            >
-              <Input
-                id="schedule-run-at"
-                type="datetime-local"
-                className={fieldInputClass}
-                value={runAtLocal}
-                onChange={(e) => setRunAtLocal(e.target.value)}
-              />
-            </FormField>
-            <ScheduleTimezoneSelect
-              timezone={timezone}
-              onTimezoneChange={setTimezone}
-              fieldClassName="sm:col-span-2"
-            />
-          </DialogFieldGrid>
-        </div>
+        <label className="space-y-1.5 text-sm">
+          <span className="font-medium">{labels.fields.runAt}</span>
+          <Input
+            type="datetime-local"
+            value={runAtLocal}
+            onChange={(event) => setRunAtLocal(event.target.value)}
+          />
+        </label>
       )}
 
-      <div
-        className={cn(
-          readOnlyFieldClass,
-          "text-muted-foreground flex min-h-9 items-center gap-2 py-2 text-sm",
-        )}
+      <label className="space-y-1.5 text-sm">
+        <span className="font-medium">{labels.fields.timezone}</span>
+        <Select value={timezone} onValueChange={setTimezone}>
+          <SelectTrigger className="w-full" data-testid="schedule-timezone">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TIMEZONE_OPTIONS.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </label>
+
+      <p
+        className="text-muted-foreground text-sm"
         data-testid="schedule-preview"
       >
-        <span className="text-foreground/70 shrink-0 text-xs font-medium">
-          {labels.preview}
-        </span>
-        <span className="min-w-0 flex-1 tabular-nums">{preview}</span>
-      </div>
+        <span className="text-foreground font-medium">{labels.preview}:</span>{" "}
+        {preview}
+      </p>
     </div>
   );
 }

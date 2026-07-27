@@ -2,20 +2,18 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  ConfirmDialog,
-  DialogFieldGrid,
-  DialogFormSection,
-  DialogInputField,
-  DialogToggleGroupField,
-  DialogSlotField,
-  DialogTextareaField,
-  ErrorAlert,
-  FormDialog,
-  dialogSaveFooterProps,
-  readOnlyFieldClass,
-} from "@/components/component";
+import { ConfirmDialog, ErrorAlert } from "@/components/component";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ScheduledTaskScheduleInput,
   type ScheduleValue,
@@ -30,6 +28,12 @@ import { RECIPES, type Recipe } from "@/core/scheduled-tasks/recipes";
 import type { ScheduledTask } from "@/core/scheduled-tasks/types";
 import { cn } from "@/lib/utils";
 
+const DEFAULT_SCHEDULE: ScheduleValue = {
+  schedule_type: "cron",
+  schedule_spec: { cron: "0 9 * * *" },
+  timezone: "",
+};
+
 function scheduleFromTask(task: ScheduledTask): ScheduleValue {
   const spec = task.schedule_spec as { cron?: string; run_at?: string };
   return {
@@ -41,8 +45,6 @@ function scheduleFromTask(task: ScheduledTask): ScheduleValue {
     timezone: task.timezone || "UTC",
   };
 }
-
-const createDialogSectionContentClass = "gap-3 pt-4 pb-4";
 
 export function ScheduledTaskFormDialog({
   open,
@@ -66,56 +68,51 @@ export function ScheduledTaskFormDialog({
   const createTask = useCreateScheduledTask();
   const updateTask = useUpdateScheduledTask(task?.id ?? "");
   const deleteTask = useDeleteScheduledTask();
-
   const isPending =
     createTask.isPending || updateTask.isPending || deleteTask.isPending;
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [createNonce, setCreateNonce] = useState(0);
-
+  const [inputNonce, setInputNonce] = useState(0);
   const [contextMode, setContextMode] = useState<
     "fresh_thread_per_run" | "reuse_thread"
   >("fresh_thread_per_run");
   const [targetThreadId, setTargetThreadId] = useState("");
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
-  const [schedule, setSchedule] = useState<ScheduleValue>({
-    schedule_type: "cron",
-    schedule_spec: { cron: "0 9 * * *" },
-    timezone: "",
-  });
+  const [schedule, setSchedule] = useState<ScheduleValue>(DEFAULT_SCHEDULE);
 
-  const contextModeLabel = (v: string) =>
-    v === "fresh_thread_per_run"
+  const contextModeLabel = (value: string) =>
+    value === "fresh_thread_per_run"
       ? st.context.fresh
-      : v === "reuse_thread"
+      : value === "reuse_thread"
         ? st.context.reuse
-        : v;
+        : value;
 
   useEffect(() => {
     if (!open) return;
     setFormError(null);
+    setDeleteOpen(false);
+
     if (isCreate) {
       const thread = presetThreadId ?? "";
       setContextMode(thread ? "reuse_thread" : "fresh_thread_per_run");
       setTargetThreadId(thread);
       setTitle("");
       setPrompt("");
-      setSchedule({
-        schedule_type: "cron",
-        schedule_spec: { cron: "0 9 * * *" },
-        timezone: "",
-      });
-      setCreateNonce((n) => n + 1);
+      setSchedule(DEFAULT_SCHEDULE);
+      setInputNonce((value) => value + 1);
       return;
     }
+
     if (!task) return;
+    setContextMode(task.context_mode);
+    setTargetThreadId(task.thread_id ?? "");
     setTitle(task.title);
     setPrompt(task.prompt);
     setSchedule(scheduleFromTask(task));
-    // Depend on id only so a background refetch (same task, new object reference)
-    // does not wipe edits in progress.
+    setInputNonce((value) => value + 1);
+    // Depend on id only so background polling does not wipe edits in progress.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isCreate, task?.id, presetThreadId]);
 
@@ -123,24 +120,20 @@ export function ScheduledTaskFormDialog({
     const labels = st.recipes[recipe.titleKey];
     setTitle(labels.title);
     setPrompt(recipe.prompt);
-    setSchedule(recipe.schedule);
     setContextMode("fresh_thread_per_run");
     setTargetThreadId("");
-    setCreateNonce((n) => n + 1);
+    setSchedule(recipe.schedule);
+    setInputNonce((value) => value + 1);
   };
 
   const hasSchedule =
     Boolean(schedule.schedule_spec.cron) ||
     Boolean(schedule.schedule_spec.run_at);
-
-  const saveDisabled = isCreate
-    ? !title.trim() ||
-      !prompt.trim() ||
-      !hasSchedule ||
-      (contextMode === "reuse_thread" && !targetThreadId.trim())
-    : !title.trim() || !prompt.trim() || !hasSchedule;
-
-  const dialogTitle = isCreate ? st.create.title : st.edit.title;
+  const saveDisabled =
+    !title.trim() ||
+    !prompt.trim() ||
+    !hasSchedule ||
+    (isCreate && contextMode === "reuse_thread" && !targetThreadId.trim());
 
   const handleSave = () => {
     if (saveDisabled) {
@@ -153,7 +146,8 @@ export function ScheduledTaskFormDialog({
       createTask.mutate(
         {
           context_mode: contextMode,
-          thread_id: contextMode === "reuse_thread" ? targetThreadId : null,
+          thread_id:
+            contextMode === "reuse_thread" ? targetThreadId.trim() : null,
           title: title.trim(),
           prompt: prompt.trim(),
           schedule_type: schedule.schedule_type,
@@ -178,9 +172,7 @@ export function ScheduledTaskFormDialog({
         schedule_spec: schedule.schedule_spec,
         timezone: schedule.timezone || "UTC",
       },
-      {
-        onSuccess: () => onOpenChange(false),
-      },
+      { onSuccess: () => onOpenChange(false) },
     );
   };
 
@@ -194,157 +186,186 @@ export function ScheduledTaskFormDialog({
     });
   };
 
+  const dialogDescription = isCreate
+    ? st.pageDescription
+    : st.edit.titlePlaceholder;
+
   return (
     <>
-      <FormDialog
-        open={open}
-        onOpenChange={onOpenChange}
-        title={dialogTitle}
-        {...dialogSaveFooterProps(t.common, {
-          busy: isPending,
-          disabled: saveDisabled,
-          saveLabel: isCreate ? st.create.submit : undefined,
-        })}
-        onConfirm={handleSave}
-        leadingDestructive={
-          isCreate || !task
-            ? undefined
-            : {
-                label: st.actions.delete,
-                onClick: () => setDeleteOpen(true),
-                disabled: isPending,
-              }
-        }
-      >
-        <div
-          className="flex flex-col gap-4"
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          className="w-full gap-0 sm:max-w-lg"
           data-testid={
             isCreate ? "scheduled-task-create-form" : "scheduled-task-edit-form"
           }
         >
-          {isCreate ? (
-            <DialogFormSection
-              title={st.recipes.label}
-              contentClassName={createDialogSectionContentClass}
-            >
-              <div className="overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <div
-                  className="flex w-max min-w-0 flex-nowrap items-center gap-1.5"
-                  data-testid="schedule-recipes"
-                >
+          <SheetHeader className="border-b pr-12">
+            <SheetTitle>
+              {isCreate ? st.create.title : st.edit.title}
+            </SheetTitle>
+            <SheetDescription>{dialogDescription}</SheetDescription>
+          </SheetHeader>
+
+          <div className="min-h-0 flex-1 space-y-5 overflow-x-hidden overflow-y-auto p-4">
+            {isCreate ? (
+              <section className="space-y-2" data-testid="schedule-recipes">
+                <h3 className="text-sm font-medium">{st.recipes.label}</h3>
+                <div className="grid grid-cols-2 gap-2">
                   {RECIPES.map((recipe) => (
                     <Button
                       key={recipe.id}
                       type="button"
                       variant="outline"
-                      size="sm"
-                      className="border-border/70 h-7 shrink-0 gap-1 px-2.5 text-xs font-normal shadow-xs"
+                      className="h-auto min-w-0 justify-start px-3 py-2 text-left whitespace-normal"
                       disabled={isPending}
                       onClick={() => applyRecipe(recipe)}
                     >
                       <span aria-hidden>{recipe.icon}</span>
-                      {st.recipes[recipe.titleKey].title}
+                      <span className="min-w-0 truncate">
+                        {st.recipes[recipe.titleKey].title}
+                      </span>
                     </Button>
                   ))}
                 </div>
-              </div>
-            </DialogFormSection>
-          ) : null}
+              </section>
+            ) : null}
 
-          {isCreate ? (
-            <DialogFormSection
-              contentClassName={createDialogSectionContentClass}
-            >
-              <DialogToggleGroupField
-                label={st.detail.contextMode}
-                colSpan="full"
-                value={contextMode}
-                disabled={isPending}
-                onValueChange={(value) => {
-                  if (
-                    value === "fresh_thread_per_run" ||
-                    value === "reuse_thread"
-                  ) {
-                    setContextMode(value);
+            {isCreate ? (
+              <section className="space-y-2">
+                <h3 className="text-sm font-medium">{st.detail.contextMode}</h3>
+                <div className="bg-muted grid grid-cols-2 gap-1 rounded-lg p-1">
+                  {(["fresh_thread_per_run", "reuse_thread"] as const).map(
+                    (value) => (
+                      <Button
+                        key={value}
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className={cn(
+                          "min-w-0",
+                          contextMode === value && "bg-background shadow-sm",
+                        )}
+                        aria-pressed={contextMode === value}
+                        disabled={isPending}
+                        onClick={() => setContextMode(value)}
+                      >
+                        {contextModeLabel(value)}
+                      </Button>
+                    ),
+                  )}
+                </div>
+                {contextMode === "reuse_thread" ? (
+                  <label className="space-y-1.5 text-sm">
+                    <span className="font-medium">{st.detail.thread}</span>
+                    <Input
+                      value={targetThreadId}
+                      onChange={(event) =>
+                        setTargetThreadId(event.target.value)
+                      }
+                      placeholder={st.context.threadIdPlaceholder}
+                      disabled={isPending}
+                    />
+                  </label>
+                ) : null}
+              </section>
+            ) : task ? (
+              <section className="space-y-2">
+                <h3 className="text-sm font-medium">{st.detail.contextMode}</h3>
+                <dl className="text-muted-foreground grid gap-1 text-sm">
+                  <div className="flex gap-2">
+                    <dt>{st.detail.contextMode}:</dt>
+                    <dd className="text-foreground">
+                      {contextModeLabel(task.context_mode)}
+                    </dd>
+                  </div>
+                  <div className="flex min-w-0 gap-2">
+                    <dt className="shrink-0">
+                      {task.context_mode === "reuse_thread"
+                        ? st.detail.thread
+                        : st.detail.lastThread}
+                      :
+                    </dt>
+                    <dd className="text-foreground truncate text-xs">
+                      {(task.context_mode === "reuse_thread"
+                        ? task.thread_id
+                        : task.last_thread_id) ?? "—"}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+            ) : null}
+
+            <section className="space-y-3">
+              <h3 className="text-sm font-medium">{st.sections.content}</h3>
+              <label className="space-y-1.5 text-sm">
+                <span className="font-medium">{st.create.taskTitle}</span>
+                <Input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder={
+                    isCreate ? st.create.taskTitle : st.edit.titlePlaceholder
                   }
-                }}
-                items={[
-                  { value: "fresh_thread_per_run", label: st.context.fresh },
-                  { value: "reuse_thread", label: st.context.reuse },
-                ]}
-              />
-              {contextMode === "reuse_thread" ? (
-                <DialogInputField
-                  label={st.detail.thread}
-                  value={targetThreadId}
-                  onChange={setTargetThreadId}
-                  placeholder={st.context.threadIdPlaceholder}
                   disabled={isPending}
-                  colSpan="full"
-                  inputClassName="font-mono text-xs"
+                  autoFocus={open && isCreate}
                 />
-              ) : null}
-            </DialogFormSection>
-          ) : task ? (
-            <DialogFormSection title={st.detail.contextMode}>
-              <DialogFieldGrid>
-                <DialogSlotField label={st.detail.contextMode}>
-                  <div className={readOnlyFieldClass}>
-                    {contextModeLabel(task.context_mode)}
-                  </div>
-                </DialogSlotField>
-                <DialogSlotField
-                  label={
-                    task.context_mode === "reuse_thread"
-                      ? st.detail.thread
-                      : st.detail.lastThread
+              </label>
+              <label className="space-y-1.5 text-sm">
+                <span className="font-medium">{st.create.prompt}</span>
+                <Textarea
+                  rows={5}
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  placeholder={
+                    isCreate ? st.create.prompt : st.edit.promptPlaceholder
                   }
-                >
-                  <div className={cn(readOnlyFieldClass, "font-mono text-xs")}>
-                    {(task.context_mode === "reuse_thread"
-                      ? task.thread_id
-                      : task.last_thread_id) ?? ""}
-                  </div>
-                </DialogSlotField>
-              </DialogFieldGrid>
-            </DialogFormSection>
-          ) : null}
+                  disabled={isPending}
+                />
+              </label>
+            </section>
 
-          <DialogFormSection title={st.sections.content}>
-            <DialogFieldGrid>
-              <DialogInputField
-                label={st.create.taskTitle}
-                value={title}
-                onChange={setTitle}
-                placeholder={st.create.taskTitle}
-                disabled={isPending}
-                colSpan="full"
-                autoFocus={open && isCreate}
+            <section className="space-y-3">
+              <h3 className="text-sm font-medium">{st.sections.schedule}</h3>
+              <ScheduledTaskScheduleInput
+                key={`${mode}-${task?.id ?? "new"}-${inputNonce}`}
+                initial={schedule}
+                onChange={setSchedule}
+                scheduleTypeLocked={!isCreate}
               />
-              <DialogTextareaField
-                label={st.create.prompt}
-                value={prompt}
-                onChange={setPrompt}
-                placeholder={st.create.prompt}
-                autoGrow
+            </section>
+
+            {formError ? <ErrorAlert>{formError}</ErrorAlert> : null}
+          </div>
+
+          <SheetFooter className="border-t sm:flex-row sm:items-center">
+            {!isCreate && task ? (
+              <Button
+                type="button"
+                variant="destructive"
+                className="sm:mr-auto"
                 disabled={isPending}
-                colSpan="full"
-              />
-            </DialogFieldGrid>
-          </DialogFormSection>
-
-          <DialogFormSection title={st.sections.schedule}>
-            <ScheduledTaskScheduleInput
-              key={isCreate ? createNonce : task?.id}
-              initial={schedule}
-              onChange={setSchedule}
-              scheduleTypeLocked={!isCreate}
-            />
-          </DialogFormSection>
-
-          {formError ? <ErrorAlert>{formError}</ErrorAlert> : null}
-        </div>
-      </FormDialog>
+                onClick={() => setDeleteOpen(true)}
+              >
+                {st.actions.delete}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => onOpenChange(false)}
+            >
+              {t.common.cancel}
+            </Button>
+            <Button
+              type="button"
+              disabled={isPending || saveDisabled}
+              onClick={handleSave}
+            >
+              {isCreate ? st.create.submit : st.edit.submit}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {!isCreate && task ? (
         <ConfirmDialog

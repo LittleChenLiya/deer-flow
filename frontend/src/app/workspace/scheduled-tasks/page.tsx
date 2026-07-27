@@ -8,17 +8,16 @@ import {
   CardAction,
   HeaderCreateButton,
   ErrorAlert,
+  ItemList,
+  ItemListPanel,
   ItemRow,
-  ItemRowMeta,
   ItemRowStatusBadge,
-  ItemRowTag,
-  ItemRowTitle,
   ListFilterField,
   ListPanelToolbar,
   ListSearchField,
+  PanelEmpty,
   Page,
   PageHeader,
-  WorkspaceIndexList,
   dotSeparatedMeta,
 } from "@/components/component";
 import {
@@ -131,6 +130,7 @@ export default function ScheduledTasksPage() {
 
   const openEditForTask = (taskId: string) => {
     setCreateOpen(false);
+    setDetailOpen(false);
     setSelectedTaskId(taskId);
     setEditOpen(true);
   };
@@ -226,9 +226,11 @@ export default function ScheduledTasksPage() {
             description={st.pageDescription}
             actions={
               <HeaderCreateButton
+                variant="default"
                 data-testid="scheduled-task-create-trigger"
                 onClick={() => {
                   setEditOpen(false);
+                  setDetailOpen(false);
                   setCreateOpen(true);
                 }}
               >
@@ -249,15 +251,9 @@ export default function ScheduledTasksPage() {
           </ErrorAlert>
         ) : null}
 
-        <WorkspaceIndexList
+        <ItemListPanel
           title={st.listTitle}
           countLabel={countLabel}
-          isLoading={tasksQuery.isPending && data === undefined}
-          isEmpty={allTasks.length === 0}
-          empty={st.emptyList}
-          isSearchEmpty={allTasks.length > 0 && filteredData.length === 0}
-          searchEmpty={listEmptyMessage}
-          listTestId="scheduled-task-list"
           toolbar={
             <ListPanelToolbar>
               <ListSearchField
@@ -305,77 +301,107 @@ export default function ScheduledTasksPage() {
             </ListPanelToolbar>
           }
         >
-          {filteredData.map((task) => {
-            const pauseResumeLabel =
-              task.status === "paused" ? st.actions.resume : st.actions.pause;
-            const rowBusy = mutatingTaskId === task.id;
+          {tasksQuery.isPending && data === undefined ? (
+            <p className="text-muted-foreground px-4 py-6 text-sm">
+              {t.common.loading}
+            </p>
+          ) : allTasks.length === 0 ? (
+            <PanelEmpty align="center" className="py-16">
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-foreground font-medium">{st.emptyList}</p>
+                <HeaderCreateButton
+                  variant="default"
+                  className="mt-2"
+                  data-testid="scheduled-task-empty-create"
+                  onClick={() => {
+                    setEditOpen(false);
+                    setDetailOpen(false);
+                    setCreateOpen(true);
+                  }}
+                >
+                  {st.create.headerAction}
+                </HeaderCreateButton>
+              </div>
+            </PanelEmpty>
+          ) : filteredData.length === 0 ? (
+            <PanelEmpty align="center">{listEmptyMessage}</PanelEmpty>
+          ) : (
+            <ItemList
+              className="gap-3 divide-y-0 p-3 sm:p-4"
+              data-testid="scheduled-task-list"
+            >
+              {filteredData.map((task) => {
+                const pauseResumeLabel =
+                  task.status === "paused"
+                    ? st.actions.resume
+                    : st.actions.pause;
+                const rowBusy = mutatingTaskId === task.id;
 
-            return (
-              <ItemRow
-                key={task.id}
-                variant="flush"
-                selected={selectedTaskId === task.id && detailOpen}
-                data-testid={`scheduled-task-item-${task.id}`}
-                topStart={
-                  <ItemRowTitle>
-                    <button
-                      type="button"
-                      className="max-w-full truncate text-left hover:underline"
-                      onClick={() => openDetail(task.id)}
-                    >
-                      {task.title}
-                    </button>
-                  </ItemRowTitle>
-                }
-                bottomStart={
-                  <ItemRowMeta>
-                    {dotSeparatedMeta([
-                      <ItemRowStatusBadge key="status" variant="outline">
+                return (
+                  <ItemRow
+                    key={task.id}
+                    selected={selectedTaskId === task.id && detailOpen}
+                    data-testid={`scheduled-task-item-${task.id}`}
+                    className="border-border/70 border"
+                    title={
+                      <button
+                        type="button"
+                        className="max-w-full truncate text-left hover:underline"
+                        onClick={() => openDetail(task.id)}
+                      >
+                        {task.title}
+                      </button>
+                    }
+                    description={task.prompt}
+                    badges={
+                      <ItemRowStatusBadge variant="outline">
                         {statusLabel(task.status)}
-                      </ItemRowStatusBadge>,
-                      <ItemRowTag key="type">
+                      </ItemRowStatusBadge>
+                    }
+                    meta={dotSeparatedMeta([
+                      <span key="type" className="font-sans">
                         {scheduleTypeLabel(task.schedule_type)}
-                      </ItemRowTag>,
+                      </span>,
                       task.next_run_at ? (
-                        <span key="next" className="tabular-nums">
+                        <span key="next" className="font-sans tabular-nums">
                           {formatTimestamp(task.next_run_at, locale)}
                         </span>
                       ) : null,
                     ])}
-                  </ItemRowMeta>
-                }
-                bottomEnd={
-                  <>
-                    <CardAction
-                      icon={SettingsIcon}
-                      label={st.actions.edit}
-                      disabled={rowBusy}
-                      onClick={() => openEditForTask(task.id)}
-                    />
-                    <CardAction
-                      icon={task.status === "paused" ? PlayIcon : PauseIcon}
-                      label={pauseResumeLabel}
-                      disabled={rowBusy}
-                      onClick={() => {
-                        if (task.status === "paused") {
-                          resumeTask.mutate(task.id);
-                        } else {
-                          pauseTask.mutate(task.id);
-                        }
-                      }}
-                    />
-                    <CardAction
-                      icon={ZapIcon}
-                      label={st.actions.trigger}
-                      disabled={rowBusy}
-                      onClick={() => triggerTask.mutate(task.id)}
-                    />
-                  </>
-                }
-              />
-            );
-          })}
-        </WorkspaceIndexList>
+                    actions={
+                      <>
+                        <CardAction
+                          icon={SettingsIcon}
+                          label={st.actions.edit}
+                          disabled={rowBusy}
+                          onClick={() => openEditForTask(task.id)}
+                        />
+                        <CardAction
+                          icon={task.status === "paused" ? PlayIcon : PauseIcon}
+                          label={pauseResumeLabel}
+                          disabled={rowBusy}
+                          onClick={() => {
+                            if (task.status === "paused") {
+                              resumeTask.mutate(task.id);
+                            } else {
+                              pauseTask.mutate(task.id);
+                            }
+                          }}
+                        />
+                        <CardAction
+                          icon={ZapIcon}
+                          label={st.actions.trigger}
+                          disabled={rowBusy}
+                          onClick={() => triggerTask.mutate(task.id)}
+                        />
+                      </>
+                    }
+                  />
+                );
+              })}
+            </ItemList>
+          )}
+        </ItemListPanel>
       </Page>
 
       <ScheduledTaskDetailSheet
@@ -392,6 +418,7 @@ export default function ScheduledTasksPage() {
         runs={taskRunsQuery.data}
         onEdit={() => {
           setCreateOpen(false);
+          setDetailOpen(false);
           setEditOpen(true);
         }}
         onPauseResume={() => {

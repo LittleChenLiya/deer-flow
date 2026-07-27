@@ -39,7 +39,7 @@ test("scheduled tasks page is reachable from sidebar", async ({ page }) => {
     })
     .click();
   await expect(
-    page.getByRole("button", { name: /Daily summary/i }),
+    page.getByTestId("scheduled-task-detail").getByText("Summarize thread"),
   ).toBeVisible();
   await expect(page.getByTestId("scheduled-task-runs")).toContainText("0 runs");
 });
@@ -86,19 +86,70 @@ test("user can create a scheduled task from the page", async ({ page }) => {
   mockLangGraphAPI(page, { threads: [], scheduledTasks: [] });
 
   await page.goto("/workspace/scheduled-tasks");
-  await page.getByTestId("scheduled-task-create-trigger").click();
+  await page.getByTestId("scheduled-task-empty-create").click();
   const createForm = page.getByTestId("scheduled-task-create-form");
+  await expect(createForm).toBeVisible();
+  await expect(createForm).toHaveAttribute("data-slot", "sheet-content");
   await createForm.getByRole("button", { name: "One-time" }).click();
   await createForm.getByLabel("Run at").fill("2026-07-02T09:00");
-  await createForm.getByPlaceholder("Task title").fill("Created from UI");
-  await createForm.getByPlaceholder("Prompt").fill("Summarize thread");
+  await createForm.getByLabel("Task title").fill("Created from UI");
+  await createForm.getByLabel("Prompt").fill("Summarize thread");
   await createForm.getByRole("button", { name: "Create" }).click();
+  const detail = page.getByTestId("scheduled-task-detail");
   await expect(
-    page.getByRole("button", { name: /Created from UI/i }),
+    page.getByRole("dialog", { name: "Created from UI" }),
   ).toBeVisible();
-  await expect(
-    page.getByTestId("scheduled-task-detail").getByText("Summarize thread"),
-  ).toBeVisible();
+  await expect(detail.getByText("Summarize thread")).toBeVisible();
+});
+
+test("user can edit and delete a scheduled task from the card actions", async ({
+  page,
+}) => {
+  mockLangGraphAPI(page, {
+    threads: [],
+    scheduledTasks: [
+      {
+        id: "task-edit",
+        thread_id: "thread-1",
+        title: "Editable task",
+        prompt: "Original prompt",
+        schedule_type: "cron",
+        schedule_spec: { cron: "0 9 * * *" },
+        timezone: "UTC",
+        status: "enabled",
+        next_run_at: "2026-07-02T01:00:00+00:00",
+        last_run_at: null,
+        last_run_id: null,
+        last_error: null,
+        run_count: 0,
+        created_at: "2026-07-01T00:00:00+00:00",
+        updated_at: "2026-07-01T00:00:00+00:00",
+      },
+    ],
+  });
+
+  await page.goto("/workspace/scheduled-tasks");
+  const taskCard = page.getByTestId("scheduled-task-item-task-edit");
+  await taskCard.getByRole("button", { name: "Edit", exact: true }).click();
+
+  const editForm = page.getByTestId("scheduled-task-edit-form");
+  await expect(editForm).toBeVisible();
+  await expect(editForm).toHaveAttribute("data-slot", "sheet-content");
+  await expect(page.getByTestId("scheduled-task-detail")).toHaveCount(0);
+  await editForm.getByLabel("Task title").fill("Updated task");
+  await editForm.getByRole("button", { name: "Save edit" }).click();
+  await expect(taskCard).toContainText("Updated task");
+
+  await taskCard.getByRole("button", { name: "Edit", exact: true }).click();
+  await page
+    .getByTestId("scheduled-task-edit-form")
+    .getByRole("button", { name: "Delete" })
+    .click();
+  const confirm = page.getByRole("dialog", { name: "Confirm action" });
+  await confirm.getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByTestId("scheduled-task-item-task-edit")).toHaveCount(
+    0,
+  );
 });
 
 test("user can pause a scheduled task from the detail pane", async ({
@@ -233,9 +284,7 @@ test("detail pane falls back to a visible task after filters hide the selected t
       name: "Paused task",
     })
     .click();
-  await expect(
-    page.getByTestId("scheduled-task-detail").getByText("Paused task"),
-  ).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Paused task" })).toBeVisible();
 
   await page
     .getByTestId("scheduled-task-status-filter")
@@ -244,12 +293,12 @@ test("detail pane falls back to a visible task after filters hide the selected t
   await page.getByRole("option", { name: "Enabled", exact: true }).click();
 
   await expect(
-    page.getByTestId("scheduled-task-detail").getByText("Enabled task"),
-  ).toBeVisible();
-  await expect(
     page.getByTestId("scheduled-task-item-task-enabled"),
   ).toBeVisible();
   await expect(page.getByTestId("scheduled-task-item-task-paused")).toHaveCount(
     0,
   );
+  await expect(
+    page.getByRole("dialog", { name: "Enabled task" }),
+  ).toBeVisible();
 });
