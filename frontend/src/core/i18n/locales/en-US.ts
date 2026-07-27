@@ -807,6 +807,8 @@ export const enUS: Translations = {
       factValidationContent: "Fact content cannot be empty.",
       factValidationConfidence: "Confidence must be a number between 0 and 1.",
       noFacts: "No saved facts yet.",
+      noSummaries: "No saved summaries yet.",
+      retry: "Retry",
       summaryReadOnly:
         "Summary sections are read-only for now. You can currently add, edit, or delete individual facts, or clear all memory.",
       memoryFullyEmpty: "No memory saved yet.",
@@ -815,6 +817,7 @@ export const enUS: Translations = {
       filterAll: "All",
       filterFacts: "Facts",
       filterSummaries: "Summaries",
+      filterLabel: "Memory filter",
       noMatches: "No matching memory found.",
       markdown: {
         overview: "Overview",

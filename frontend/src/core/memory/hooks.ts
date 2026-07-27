@@ -15,11 +15,11 @@ import type {
 } from "./types";
 
 export function useMemory() {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["memory"],
     queryFn: () => loadMemory(),
   });
-  return { memory: data ?? null, isLoading, error };
+  return { memory: data ?? null, isLoading, error, refetch };
 }
 
 export function useClearMemory() {

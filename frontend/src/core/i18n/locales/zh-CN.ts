@@ -776,6 +776,8 @@ export const zhCN: Translations = {
       factValidationContent: "事实内容不能为空。",
       factValidationConfidence: "置信度必须是 0 到 1 之间的数字。",
       noFacts: "还没有保存的事实。",
+      noSummaries: "还没有保存的摘要。",
+      retry: "重试",
       summaryReadOnly:
         "摘要分区当前仍为只读。现在你可以清空全部记忆或删除单条事实。",
       memoryFullyEmpty: "还没有保存任何记忆。",
@@ -784,6 +786,7 @@ export const zhCN: Translations = {
       filterAll: "全部",
       filterFacts: "事实",
       filterSummaries: "摘要",
+      filterLabel: "记忆筛选",
       noMatches: "没有找到匹配的记忆。",
       markdown: {
         overview: "概览",

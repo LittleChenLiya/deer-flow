@@ -48,6 +48,7 @@ import { streamdownPlugins } from "@/core/streamdown/plugins";
 import { pathOfThread } from "@/core/threads/utils";
 import { formatTimeAgo } from "@/core/utils/datetime";
 
+import { SettingsPageState } from "./settings-page-state";
 import { SettingsSection } from "./settings-section";
 
 type MemoryViewFilter = "all" | "facts" | "summaries";
@@ -280,7 +281,7 @@ function upperFirst(str: string) {
 
 export function MemorySettingsPage() {
   const { t } = useI18n();
-  const { memory, isLoading, error } = useMemory();
+  const { memory, isLoading, error, refetch } = useMemory();
   const clearMemory = useClearMemory();
   const createMemoryFact = useCreateMemoryFact();
   const deleteMemoryFact = useDeleteMemoryFact();
@@ -337,6 +338,8 @@ export function MemorySettingsPage() {
   const factValidationContent = t.settings.memory.factValidationContent;
   const factValidationConfidence = t.settings.memory.factValidationConfidence;
   const noFacts = t.settings.memory.noFacts ?? "No saved facts yet.";
+  const noSummaries =
+    t.settings.memory.noSummaries ?? "No saved summaries yet.";
   const summaryReadOnly = t.settings.memory.summaryReadOnly;
   const memoryFullyEmpty =
     t.settings.memory.memoryFullyEmpty ?? "No memory saved yet.";
@@ -347,6 +350,7 @@ export function MemorySettingsPage() {
   const filterAll = t.settings.memory.filterAll ?? "All";
   const filterFacts = t.settings.memory.filterFacts ?? "Facts";
   const filterSummaries = t.settings.memory.filterSummaries ?? "Summaries";
+  const filterLabel = t.settings.memory.filterLabel;
   const noMatches = t.settings.memory.noMatches ?? "No matching memory found";
   const exportButton = t.settings.memory.exportButton ?? t.common.export;
   const exportSuccess =
@@ -354,16 +358,22 @@ export function MemorySettingsPage() {
   const importButton = t.settings.memory.importButton ?? t.common.import;
   const importSuccess = t.settings.memory.importSuccess ?? "Memory imported";
 
+  const memoryIsEmpty =
+    memory !== null &&
+    isMemorySummaryEmpty(memory) &&
+    memory.facts.length === 0;
   const sectionGroups = memory ? buildMemorySectionGroups(memory, t) : [];
   const filteredSectionGroups = sectionGroups
     .map((group) => ({
       ...group,
-      sections: group.sections.filter((section) =>
-        normalizedQuery
-          ? `${section.title} ${section.summary}`
-              .toLowerCase()
-              .includes(normalizedQuery)
-          : true,
+      sections: group.sections.filter(
+        (section) =>
+          section.summary.trim() !== "" &&
+          (normalizedQuery
+            ? `${section.title} ${section.summary}`
+                .toLowerCase()
+                .includes(normalizedQuery)
+            : true),
       ),
     }))
     .filter((group) => group.sections.length > 0);
@@ -381,14 +391,16 @@ export function MemorySettingsPage() {
   const showSummaries = filter !== "facts";
   const showFacts = filter !== "summaries";
   const shouldRenderSummariesBlock =
-    showSummaries && (filteredSectionGroups.length > 0 || !normalizedQuery);
-  const shouldRenderFactsBlock =
-    showFacts &&
-    (filteredFacts.length > 0 || !normalizedQuery || filter === "facts");
+    showSummaries && filteredSectionGroups.length > 0;
+  const shouldRenderFactsBlock = showFacts && filteredFacts.length > 0;
   const hasMatchingVisibleContent =
-    !memory ||
     (showSummaries && filteredSectionGroups.length > 0) ||
     (showFacts && filteredFacts.length > 0);
+  const visibleEmptyLabel = normalizedQuery
+    ? noMatches
+    : filter === "summaries"
+      ? noSummaries
+      : noFacts;
 
   async function handleExportMemory() {
     try {
@@ -543,55 +555,63 @@ export function MemorySettingsPage() {
         description={t.settings.memory.description}
       >
         {isLoading ? (
-          <div className="text-muted-foreground text-sm">
-            {t.common.loading}
-          </div>
+          <SettingsPageState kind="loading" title={t.common.loading} />
         ) : error ? (
-          <div>Error: {error.message}</div>
+          <SettingsPageState
+            kind="error"
+            title={error.message}
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void refetch()}
+              >
+                {t.settings.memory.retry}
+              </Button>
+            }
+          />
         ) : !memory ? (
-          <div className="text-muted-foreground text-sm">
-            {t.settings.memory.empty}
-          </div>
+          <SettingsPageState kind="empty" title={t.settings.memory.empty} />
         ) : (
-          <div className="space-y-4">
-            {isMemorySummaryEmpty(memory) && memory.facts.length === 0 ? (
-              <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
-                {memoryFullyEmpty}
-              </div>
-            ) : null}
-
+          <div className="min-w-0 space-y-4">
             <div className="flex flex-col gap-3">
-              {/* Row 1: search + filter tabs */}
-              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-                <Input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={searchPlaceholder}
-                  className="min-w-0 flex-1 sm:max-w-md"
-                />
-                <ToggleGroup
-                  type="single"
-                  value={filter}
-                  onValueChange={(value) => {
-                    if (value) setFilter(value as MemoryViewFilter);
-                  }}
-                  variant="outline"
-                  className="shrink-0 self-start sm:ml-auto sm:self-auto"
-                >
-                  <ToggleGroupItem value="all" className="whitespace-nowrap">
-                    {filterAll}
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="facts" className="whitespace-nowrap">
-                    {filterFacts}
-                  </ToggleGroupItem>
-                  <ToggleGroupItem
-                    value="summaries"
-                    className="whitespace-nowrap"
+              {!memoryIsEmpty ? (
+                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+                  <Input
+                    aria-label={searchPlaceholder}
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder={searchPlaceholder}
+                    className="min-w-0 flex-1 sm:max-w-md"
+                  />
+                  <ToggleGroup
+                    type="single"
+                    value={filter}
+                    onValueChange={(value) => {
+                      if (value) setFilter(value as MemoryViewFilter);
+                    }}
+                    variant="outline"
+                    aria-label={filterLabel}
+                    className="max-w-full self-start overflow-x-auto sm:ml-auto sm:self-auto"
                   >
-                    {filterSummaries}
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
+                    <ToggleGroupItem value="all" className="whitespace-nowrap">
+                      {filterAll}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="facts"
+                      className="whitespace-nowrap"
+                    >
+                      {filterFacts}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="summaries"
+                      className="whitespace-nowrap"
+                    >
+                      {filterSummaries}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+              ) : null}
 
               {/* Row 2: actions — constructive group on the left, destructive separated to the right */}
               <div className="flex flex-wrap items-center gap-2">
@@ -599,6 +619,7 @@ export function MemorySettingsPage() {
                   ref={fileInputRef}
                   type="file"
                   accept=".json,application/json"
+                  aria-label={importButton}
                   className="hidden"
                   onChange={(event) => void handleImportFileSelection(event)}
                 />
@@ -630,10 +651,14 @@ export function MemorySettingsPage() {
               </div>
             </div>
 
-            {!hasMatchingVisibleContent && normalizedQuery ? (
-              <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
-                {noMatches}
-              </div>
+            {memoryIsEmpty ? (
+              <SettingsPageState kind="empty" title={memoryFullyEmpty} />
+            ) : !hasMatchingVisibleContent ? (
+              <SettingsPageState
+                compact
+                kind="empty"
+                title={visibleEmptyLabel}
+              />
             ) : null}
 
             {shouldRenderSummariesBlock ? (
@@ -757,8 +782,18 @@ export function MemorySettingsPage() {
         )}
       </SettingsSection>
 
-      <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
-        <DialogContent>
+      <Dialog
+        open={clearDialogOpen}
+        onOpenChange={(open) => {
+          if (!clearMemory.isPending) {
+            setClearDialogOpen(open);
+          }
+        }}
+      >
+        <DialogContent
+          aria-busy={clearMemory.isPending}
+          showCloseButton={!clearMemory.isPending}
+        >
           <DialogHeader>
             <DialogTitle>{clearAllConfirmTitle}</DialogTitle>
             <DialogDescription>{clearAllConfirmDescription}</DialogDescription>
@@ -785,6 +820,9 @@ export function MemorySettingsPage() {
       <Dialog
         open={factEditorOpen}
         onOpenChange={(open) => {
+          if (isFactFormPending) {
+            return;
+          }
           setFactEditorOpen(open);
           if (!open) {
             setFactToEdit(null);
@@ -792,7 +830,10 @@ export function MemorySettingsPage() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent
+          aria-busy={isFactFormPending}
+          showCloseButton={!isFactFormPending}
+        >
           <DialogHeader>
             <DialogTitle>
               {factToEdit ? editFactTitle : addFactTitle}
@@ -808,6 +849,7 @@ export function MemorySettingsPage() {
               </label>
               <Textarea
                 id={factContentInputId}
+                disabled={isFactFormPending}
                 value={factForm.content}
                 onChange={(event) =>
                   setFactForm((current) => ({
@@ -830,6 +872,7 @@ export function MemorySettingsPage() {
                 </label>
                 <Input
                   id={factCategoryInputId}
+                  disabled={isFactFormPending}
                   value={factForm.category}
                   onChange={(event) =>
                     setFactForm((current) => ({
@@ -851,6 +894,7 @@ export function MemorySettingsPage() {
                 <Input
                   id={factConfidenceInputId}
                   aria-describedby={factConfidenceHintId}
+                  disabled={isFactFormPending}
                   type="number"
                   min="0"
                   max="1"
@@ -897,12 +941,15 @@ export function MemorySettingsPage() {
       <Dialog
         open={factToDelete !== null}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open && !deleteMemoryFact.isPending) {
             setFactToDelete(null);
           }
         }}
       >
-        <DialogContent>
+        <DialogContent
+          aria-busy={deleteMemoryFact.isPending}
+          showCloseButton={!deleteMemoryFact.isPending}
+        >
           <DialogHeader>
             <DialogTitle>{factDeleteConfirmTitle}</DialogTitle>
             <DialogDescription>
@@ -941,12 +988,15 @@ export function MemorySettingsPage() {
       <Dialog
         open={pendingImport !== null}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open && !importMemoryMutation.isPending) {
             setPendingImport(null);
           }
         }}
       >
-        <DialogContent>
+        <DialogContent
+          aria-busy={importMemoryMutation.isPending}
+          showCloseButton={!importMemoryMutation.isPending}
+        >
           <DialogHeader>
             <DialogTitle>{t.settings.memory.importConfirmTitle}</DialogTitle>
             <DialogDescription>
@@ -954,7 +1004,7 @@ export function MemorySettingsPage() {
             </DialogDescription>
           </DialogHeader>
           {pendingImport ? (
-            <div className="bg-muted rounded-md border p-3 text-sm">
+            <div className="bg-muted min-w-0 rounded-md border p-3 text-sm break-words">
               <div>
                 <span className="text-muted-foreground">
                   {t.settings.memory.importFileLabel}:

@@ -683,6 +683,8 @@ export interface Translations {
       factValidationContent: string;
       factValidationConfidence: string;
       noFacts: string;
+      noSummaries: string;
+      retry: string;
       summaryReadOnly: string;
       memoryFullyEmpty: string;
       factPreviewLabel: string;
@@ -690,6 +692,7 @@ export interface Translations {
       filterAll: string;
       filterFacts: string;
       filterSummaries: string;
+      filterLabel: string;
       noMatches: string;
       markdown: {
         overview: string;
