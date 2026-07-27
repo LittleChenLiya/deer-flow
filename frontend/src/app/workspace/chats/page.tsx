@@ -1,15 +1,15 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  HeaderCreateButton,
   ItemList,
   ItemListInfiniteTail,
   ItemListLoadMoreFooter,
   ItemListPanel,
-  ItemRow,
-  ItemRowMeta,
-  ItemRowTitle,
   ListPanelToolbar,
   ListSearchField,
   Page,
@@ -33,6 +33,7 @@ import { formatTimeAgo } from "@/core/utils/datetime";
 
 export default function ChatsPage() {
   const { t } = useI18n();
+  const router = useRouter();
   const {
     data: infiniteThreads,
     fetchNextPage,
@@ -81,6 +82,14 @@ export default function ChatsPage() {
         <PageHeader
           title={t.chats.pageTitle}
           description={t.chats.pageDescription}
+          actions={
+            <HeaderCreateButton
+              variant="default"
+              onClick={() => router.push("/workspace/chats/new")}
+            >
+              {t.sidebar.newChat}
+            </HeaderCreateButton>
+          }
         />
       }
       bodyClassName="flex min-h-0 flex-1 flex-col"
@@ -114,37 +123,55 @@ export default function ChatsPage() {
         }
       >
         {filteredThreads.length === 0 ? (
-          <PanelEmpty>{emptyMessage}</PanelEmpty>
+          <PanelEmpty
+            align="center"
+            className="flex min-h-72 items-center justify-center"
+          >
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-foreground font-medium">
+                {isSearching ? t.chats.searchEmpty : t.sidebar.newChat}
+              </p>
+              {!isSearching ? (
+                <>
+                  <p className="text-muted-foreground text-sm">
+                    {emptyMessage}
+                  </p>
+                  <HeaderCreateButton
+                    variant="default"
+                    className="mt-2"
+                    onClick={() => router.push("/workspace/chats/new")}
+                  >
+                    {t.sidebar.newChat}
+                  </HeaderCreateButton>
+                </>
+              ) : null}
+            </div>
+          </PanelEmpty>
         ) : (
           <>
             <ItemList variant="flush">
               {filteredThreads.map((thread) => {
                 const channelSource = channelSourceOfThread(thread);
                 return (
-                  <ItemRow
-                    key={thread.thread_id}
-                    variant="flush"
-                    href={pathOfThread(thread)}
-                    topStart={
+                  <Link key={thread.thread_id} href={pathOfThread(thread)}>
+                    <div className="hover:bg-muted/40 flex flex-col gap-2 p-4 transition-colors">
                       <div className="flex min-w-0 items-center gap-2">
                         <ThreadChannelIcon source={channelSource} />
-                        <ItemRowTitle>{titleOfThread(thread)}</ItemRowTitle>
+                        <div className="min-w-0 flex-1 truncate text-sm font-medium">
+                          {titleOfThread(thread)}
+                        </div>
+                        <ThreadChannelBadge
+                          source={channelSource}
+                          className="hidden sm:inline-flex"
+                        />
                       </div>
-                    }
-                    topEnd={
-                      <ThreadChannelBadge
-                        source={channelSource}
-                        className="hidden sm:inline-flex"
-                      />
-                    }
-                    bottomStart={
-                      thread.updated_at ? (
-                        <ItemRowMeta>
+                      {thread.updated_at ? (
+                        <div className="text-muted-foreground text-sm">
                           {formatTimeAgo(thread.updated_at)}
-                        </ItemRowMeta>
-                      ) : undefined
-                    }
-                  />
+                        </div>
+                      ) : null}
+                    </div>
+                  </Link>
                 );
               })}
             </ItemList>

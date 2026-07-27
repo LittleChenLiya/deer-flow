@@ -28,6 +28,24 @@ const FIRST_PAGE_LAST = `Conversation ${String(PAGE_SIZE).padStart(3, "0")}`;
 const SECOND_PAGE_FIRST = `Conversation ${String(PAGE_SIZE + 1).padStart(3, "0")}`;
 
 test.describe("Thread list infinite scroll (issue #3482)", () => {
+  test("empty chats page offers a central create action only before searching", async ({
+    page,
+  }) => {
+    mockLangGraphAPI(page, { threads: [] });
+
+    await page.goto("/workspace/chats");
+
+    await expect(
+      page.getByRole("heading", { name: "Chat history" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "New chat" })).toHaveCount(2);
+
+    await page.getByPlaceholder("Search chats").fill("missing");
+
+    await expect(page.getByText("No matching conversations")).toBeVisible();
+    await expect(page.getByRole("button", { name: "New chat" })).toHaveCount(1);
+  });
+
   test("chats list page loads more threads when scrolling to the bottom", async ({
     page,
   }) => {
