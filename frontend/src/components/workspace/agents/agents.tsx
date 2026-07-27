@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 
 const NAME_RE = /^[A-Za-z0-9-]+$/;
 const INHERIT_VALUE = "__inherit__";
+const MAX_VISIBLE_META_TAGS = 3;
 
 function newChatHref(agentName: string) {
   return `/workspace/agents/${encodeURIComponent(agentName)}/chats/new`;
@@ -347,7 +348,16 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
     for (const skill of agent.skills ?? []) {
       items.push({ key: `sk:${skill}`, label: skill });
     }
-    return items.length > 0 ? itemMetaTags(items) : undefined;
+    if (items.length === 0) {
+      return undefined;
+    }
+
+    const visibleItems = items.slice(0, MAX_VISIBLE_META_TAGS);
+    const hiddenCount = items.length - visibleItems.length;
+    if (hiddenCount > 0) {
+      visibleItems.push({ key: "more", label: `+${hiddenCount}` });
+    }
+    return itemMetaTags(visibleItems);
   }, [agent.model, agent.skills, agent.tool_groups]);
 
   return (

@@ -1,5 +1,6 @@
 "use client";
 
+import { BotIcon, PlusIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -12,6 +13,15 @@ import {
   PageHeader,
   SearchInput,
 } from "@/components/component";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { AgentCard, AgentFormDialog } from "@/components/workspace/agents";
 import type { Agent } from "@/core/agents";
 import { useAgents } from "@/core/agents";
@@ -78,11 +88,14 @@ export default function AgentsPage() {
             description={t.agents.description}
             stat={
               !isLoading && agents.length > 0
-                ? `${filtered.length}/${agents.length}`
+                ? t.agents.agentCount(agents.length)
                 : undefined
             }
             actions={
-              <HeaderCreateButton onClick={() => setCreateOpen(true)}>
+              <HeaderCreateButton
+                variant="default"
+                onClick={() => setCreateOpen(true)}
+              >
                 {t.agents.newAgent}
               </HeaderCreateButton>
             }
@@ -100,7 +113,21 @@ export default function AgentsPage() {
         <ErrorAlert>{listError}</ErrorAlert>
 
         {agents.length === 0 ? (
-          <ListEmpty>{t.agents.emptyDescription}</ListEmpty>
+          <Empty className="min-h-[22rem] rounded-xl border">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <BotIcon />
+              </EmptyMedia>
+              <EmptyTitle>{t.agents.emptyTitle}</EmptyTitle>
+              <EmptyDescription>{t.agents.emptyDescription}</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={() => setCreateOpen(true)}>
+                <PlusIcon />
+                {t.agents.newAgent}
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : filtered.length === 0 ? (
           <ListEmpty size="compact">{t.agents.searchEmpty}</ListEmpty>
         ) : (

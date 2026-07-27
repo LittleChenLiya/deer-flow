@@ -413,6 +413,7 @@ export const zhCN: Translations = {
   agents: {
     title: "智能体",
     description: "创建和管理具有专属 Prompt 与能力的自定义智能体",
+    agentCount: (count) => `${count} 个智能体`,
     newAgent: "新建智能体",
     emptyTitle: "还没有自定义智能体",
     emptyDescription: "创建你的第一个自定义智能体，设置专属系统提示词。",

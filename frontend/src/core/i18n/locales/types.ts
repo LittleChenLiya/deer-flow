@@ -343,6 +343,7 @@ export interface Translations {
   agents: {
     title: string;
     description: string;
+    agentCount: (count: number) => string;
     newAgent: string;
     emptyTitle: string;
     emptyDescription: string;

@@ -429,6 +429,7 @@ export const enUS: Translations = {
     title: "Agents",
     description:
       "Create and manage custom agents with specialized prompts and capabilities",
+    agentCount: (count) => `${count} ${count === 1 ? "agent" : "agents"}`,
     newAgent: "New Agent",
     emptyTitle: "No custom agents yet",
     emptyDescription:

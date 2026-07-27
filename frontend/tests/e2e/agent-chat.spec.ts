@@ -29,6 +29,49 @@ test.describe("Agent chat", () => {
     await expect(page.getByText("test-agent")).toBeVisible({
       timeout: 15_000,
     });
+    await expect(page.getByText("2 agents", { exact: true })).toBeVisible();
+    await expect(page.getByText("2/2", { exact: true })).toHaveCount(0);
+  });
+
+  test("agent gallery empty state offers a create action", async ({ page }) => {
+    mockLangGraphAPI(page, { agents: [] });
+
+    await page.goto("/workspace/agents");
+
+    const emptyState = page.locator('[data-slot="empty"]');
+    await expect(
+      emptyState.getByText("No custom agents yet", { exact: true }),
+    ).toBeVisible({ timeout: 15_000 });
+    await emptyState.getByRole("button", { name: "New Agent" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Design your Agent" }),
+    ).toBeVisible();
+  });
+
+  test("agent cards collapse excess capability tags", async ({ page }) => {
+    mockLangGraphAPI(page, {
+      agents: [
+        {
+          name: "tagged-agent",
+          description: "Agent with many capabilities",
+          model: "test-model",
+          tool_groups: ["tool-a", "tool-b", "tool-c"],
+          skills: ["skill-a", "skill-b"],
+        },
+      ],
+    });
+
+    await page.goto("/workspace/agents");
+
+    const card = page.locator("article", { hasText: "tagged-agent" });
+    await expect(card.getByText("test-model", { exact: true })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(card.getByText("tool-a", { exact: true })).toBeVisible();
+    await expect(card.getByText("tool-b", { exact: true })).toBeVisible();
+    await expect(card.getByText("+3", { exact: true })).toBeVisible();
+    await expect(card.getByText("tool-c", { exact: true })).toHaveCount(0);
+    await expect(card.getByText("skill-a", { exact: true })).toHaveCount(0);
   });
 
   test("agent chat page loads with input box and AI disclaimer", async ({
