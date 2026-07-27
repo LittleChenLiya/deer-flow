@@ -846,21 +846,10 @@ export const enUS: Translations = {
     },
     appearance: {
       sectionTitle: "Appearance",
-      sectionDescription: "Appearance mode, accent color, and language.",
+      sectionDescription: "Appearance mode and language.",
       appearanceModeTitle: "Appearance mode",
       appearanceModeDescription:
         "Follow the system or choose a fixed light or dark interface.",
-      themeColorTitle: "Theme color",
-      themeColorDescription:
-        "Pick an accent for buttons, focus rings, and highlights.",
-      accents: {
-        default: "Classic",
-        ocean: "Ocean blue",
-        forest: "Forest green",
-        grape: "Twilight purple",
-        sunset: "Sunset orange",
-        rose: "Rose pink",
-      },
       system: "System",
       light: "Light",
       dark: "Dark",

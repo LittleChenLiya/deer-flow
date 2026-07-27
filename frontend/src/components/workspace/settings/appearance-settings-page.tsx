@@ -13,11 +13,6 @@ import {
 } from "@/components/ui/select";
 import { enUS, isLocale, zhCN, type Locale } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
-import { useAppearanceAccent } from "@/core/settings/hooks";
-import {
-  APPEARANCE_ACCENT_IDS,
-  APPEARANCE_ACCENT_SWATCH,
-} from "@/core/settings/local";
 import { cn } from "@/lib/utils";
 
 import { SettingsSection } from "./settings-section";
@@ -30,7 +25,6 @@ const languageOptions: { value: Locale; label: string }[] = [
 export function AppearanceSettingsPage() {
   const { t, locale, changeLocale } = useI18n();
   const { theme, setTheme, systemTheme } = useTheme();
-  const { accent, setAccent } = useAppearanceAccent();
   const currentTheme = (theme ?? "system") as "system" | "light" | "dark";
 
   const themeOptions = useMemo(
@@ -62,16 +56,6 @@ export function AppearanceSettingsPage() {
       t.settings.appearance.system,
       t.settings.appearance.systemDescription,
     ],
-  );
-
-  const accentOptions = useMemo(
-    () =>
-      APPEARANCE_ACCENT_IDS.map((id) => ({
-        id,
-        label: t.settings.appearance.accents[id],
-        swatch: APPEARANCE_ACCENT_SWATCH[id],
-      })),
-    [t.settings.appearance.accents],
   );
 
   return (
@@ -108,28 +92,6 @@ export function AppearanceSettingsPage() {
         <div className="space-y-3">
           <div className="space-y-1">
             <div className="text-sm font-medium">
-              {t.settings.appearance.themeColorTitle}
-            </div>
-            <p className="text-muted-foreground text-sm">
-              {t.settings.appearance.themeColorDescription}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {accentOptions.map((option) => (
-              <AccentPresetCard
-                key={option.id}
-                label={option.label}
-                swatch={option.swatch}
-                active={accent === option.id}
-                onSelect={() => setAccent(option.id)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <div className="text-sm font-medium">
               {t.settings.appearance.languageTitle}
             </div>
             <p className="text-muted-foreground text-sm">
@@ -158,38 +120,6 @@ export function AppearanceSettingsPage() {
         </div>
       </div>
     </SettingsSection>
-  );
-}
-
-function AccentPresetCard({
-  label,
-  swatch,
-  active,
-  onSelect,
-}: {
-  label: string;
-  swatch: string;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        "flex flex-col items-center gap-2 rounded-lg border p-3 text-center transition-all",
-        active
-          ? "border-primary ring-primary/30 shadow-sm ring-2"
-          : "hover:border-border hover:shadow-sm",
-      )}
-    >
-      <span
-        className="ring-background size-10 rounded-full ring-2 ring-offset-2 ring-offset-transparent"
-        style={{ background: swatch }}
-        aria-hidden
-      />
-      <span className="text-xs leading-snug font-medium">{label}</span>
-    </button>
   );
 }
 

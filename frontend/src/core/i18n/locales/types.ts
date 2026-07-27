@@ -724,16 +724,6 @@ export interface Translations {
       sectionDescription: string;
       appearanceModeTitle: string;
       appearanceModeDescription: string;
-      themeColorTitle: string;
-      themeColorDescription: string;
-      accents: {
-        default: string;
-        ocean: string;
-        forest: string;
-        grape: string;
-        sunset: string;
-        rose: string;
-      };
       system: string;
       light: string;
       dark: string;
