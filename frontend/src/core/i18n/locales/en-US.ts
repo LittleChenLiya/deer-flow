@@ -22,12 +22,15 @@ export const enUS: Translations = {
     home: "Home",
     settings: "Settings",
     delete: "Delete",
+    deleteConfirm: "Confirm delete?",
     edit: "Edit",
     rename: "Rename",
     renameFailed: "Failed to rename thread.",
     share: "Share",
     openInNewWindow: "Open in new window",
     close: "Close",
+    back: "Back",
+    confirmTitle: "Confirm action",
     more: "More",
     search: "Search",
     loadMore: "Load more",
@@ -44,6 +47,7 @@ export const enUS: Translations = {
     preview: "Preview",
     cancel: "Cancel",
     save: "Save",
+    saving: "Saving…",
     install: "Install",
     create: "Create",
     import: "Import",
@@ -276,6 +280,12 @@ export const enUS: Translations = {
 
   // Scheduled tasks
   scheduledTasks: {
+    pageDescription: "Manage recurring or one-off agent runs",
+    listTitle: "All tasks",
+    emptyList: "No scheduled tasks yet",
+    filterEmpty: "No tasks match the current filters",
+    searchPlaceholder: "Search tasks",
+    searchEmpty: "No matching tasks",
     scheduleType: {
       cron: "Recurring",
       once: "One-time",
@@ -286,7 +296,7 @@ export const enUS: Translations = {
       daily: "Daily",
       weekly: "Weekly",
       monthly: "Monthly",
-      custom: "Custom cron",
+      custom: "Custom",
     },
     fields: {
       minute: "Minute",
@@ -311,6 +321,7 @@ export const enUS: Translations = {
     cronHelp: "Open crontab.guru",
     create: {
       title: "Create scheduled task",
+      headerAction: "New task",
       taskTitle: "Task title",
       prompt: "Prompt",
       submit: "Create",
@@ -320,6 +331,10 @@ export const enUS: Translations = {
       fresh: "Fresh thread",
       reuse: "Reuse thread",
       threadIdPlaceholder: "Thread ID",
+    },
+    sections: {
+      content: "Task",
+      schedule: "Schedule",
     },
     filters: {
       allStatuses: "All statuses",
@@ -366,6 +381,7 @@ export const enUS: Translations = {
       delete: "Failed to delete scheduled task",
     },
     edit: {
+      title: "Edit scheduled task",
       titlePlaceholder: "Edit title",
       promptPlaceholder: "Edit prompt",
       submit: "Save edit",
@@ -412,7 +428,7 @@ export const enUS: Translations = {
   agents: {
     title: "Agents",
     description:
-      "Create and manage custom agents with specialized prompts and capabilities.",
+      "Create and manage custom agents with specialized prompts and capabilities",
     newAgent: "New Agent",
     emptyTitle: "No custom agents yet",
     emptyDescription:
@@ -478,6 +494,28 @@ export const enUS: Translations = {
     settingsInvalidTemperature: "Temperature must be between 0 and 2",
     settingsInvalidMaxTokens:
       "Max output tokens must be a positive integer up to 200,000",
+    searchPlaceholder: "Search agents…",
+    searchEmpty: "No agents match your search.",
+    formCreateTitle: "Create agent",
+    editPageTitle: "Edit agent",
+    sectionBasic: "Basics",
+    fieldName: "Agent name",
+    fieldDescription: "Description",
+    fieldModel: "Model",
+    sectionModel: "Model",
+    soulTitle: "Persona",
+    soulHint: "Personality, principles, and guardrails (Markdown)",
+    soulGenerate: "AI generate",
+    soulGenerateHint:
+      "Drafts SOUL from the name, description, and current text — review before saving.",
+    soulGenerating: "Generating…",
+    soulGenerateError: "Failed to generate SOUL",
+    soulGenerated: "SOUL generated — review and save when ready",
+    sectionCapability: "Capabilities",
+    createSuccess: "Agent created",
+    settingsNamePlaceholder: "Letters, digits, hyphens — e.g. code-reviewer",
+    descriptionPlaceholder: "Briefly describe what this agent does",
+    modelInherit: "Default model",
   },
 
   // Breadcrumb
@@ -513,6 +551,12 @@ export const enUS: Translations = {
   // Chats
   chats: {
     searchChats: "Search chats",
+    listTitle: "All conversations",
+    pageTitle: "Chat history",
+    pageDescription:
+      "Primary conversations from the main chat and custom agents",
+    searchEmpty: "No matching conversations",
+    emptyList: "No conversations yet. Start a new chat from the sidebar.",
     loadMoreToSearch: "Load more to search older conversations",
     loadingMore: "Loading more...",
     loadOlderChats: "Load older chats",
@@ -801,9 +845,22 @@ export const enUS: Translations = {
       },
     },
     appearance: {
-      themeTitle: "Theme",
-      themeDescription:
-        "Choose how the interface follows your device or stays fixed.",
+      sectionTitle: "Appearance",
+      sectionDescription: "Appearance mode, accent color, and language.",
+      appearanceModeTitle: "Appearance mode",
+      appearanceModeDescription:
+        "Follow the system or choose a fixed light or dark interface.",
+      themeColorTitle: "Theme color",
+      themeColorDescription:
+        "Pick an accent for buttons, focus rings, and highlights.",
+      accents: {
+        default: "Classic",
+        ocean: "Ocean blue",
+        forest: "Forest green",
+        grape: "Twilight purple",
+        sunset: "Sunset orange",
+        rose: "Rose pink",
+      },
       system: "System",
       light: "Light",
       dark: "Dark",

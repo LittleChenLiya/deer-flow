@@ -123,3 +123,25 @@ export async function checkAgentName(
   }
   return res.json() as Promise<{ available: boolean; name: string }>;
 }
+
+export async function generateSoul(request: {
+  name: string;
+  description?: string;
+  soul?: string;
+  locale?: string;
+  model_name?: string;
+}): Promise<{ soul: string }> {
+  const res = await fetch(`${getBackendBaseURL()}/api/agents/generate-soul`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { detail?: string };
+    if (isAgentsApiDisabledDetail(err.detail)) {
+      throw new AgentsApiDisabledError(err.detail!);
+    }
+    throw new Error(err.detail ?? `Failed to generate SOUL: ${res.statusText}`);
+  }
+  return res.json() as Promise<{ soul: string }>;
+}

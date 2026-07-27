@@ -33,7 +33,7 @@ export async function WorkspaceContent({
     <QueryClientProvider>
       <SidebarProvider className="h-screen" defaultOpen={initialSidebarOpen}>
         <WorkspaceSidebar />
-        <SidebarInset className="min-w-0">
+        <SidebarInset className="workspace-shell flex min-w-0 flex-col">
           <GatewayOfflineBanner gatewayUnavailable={gatewayUnavailable} />
           {children}
         </SidebarInset>

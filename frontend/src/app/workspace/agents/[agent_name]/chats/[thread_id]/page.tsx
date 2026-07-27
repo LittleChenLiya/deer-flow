@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
+import { Tooltip } from "@/components/component/tooltip";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AgentWelcome } from "@/components/workspace/agent-welcome";
@@ -28,7 +29,6 @@ import {
 import { ThreadTitle } from "@/components/workspace/thread-title";
 import { TodoList } from "@/components/workspace/todo-list";
 import { TokenUsageIndicator } from "@/components/workspace/token-usage-indicator";
-import { Tooltip } from "@/components/workspace/tooltip";
 import { useActiveGoal } from "@/components/workspace/use-active-goal";
 import { useAgent } from "@/core/agents";
 import { useI18n } from "@/core/i18n/hooks";
@@ -365,7 +365,6 @@ export default function AgentChatPage() {
                     threadId={threadId}
                     draftThreadId={isNewThread ? "new" : threadId}
                     draftAgentName={agent_name}
-                    defaultModelName={agent?.model}
                     autoFocus={isWelcomeMode}
                     status={
                       thread.error

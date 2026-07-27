@@ -32,6 +32,12 @@ test("scheduled tasks page is reachable from sidebar", async ({ page }) => {
   await page.getByRole("link", { name: /scheduled tasks/i }).click();
   await page.waitForURL("**/workspace/scheduled-tasks");
   await expect(page).toHaveURL(/workspace\/scheduled-tasks/);
+  await page
+    .getByTestId("scheduled-task-item-task-1")
+    .getByRole("button", {
+      name: "Daily summary",
+    })
+    .click();
   await expect(
     page.getByRole("button", { name: /Daily summary/i }),
   ).toBeVisible();
@@ -80,6 +86,7 @@ test("user can create a scheduled task from the page", async ({ page }) => {
   mockLangGraphAPI(page, { threads: [], scheduledTasks: [] });
 
   await page.goto("/workspace/scheduled-tasks");
+  await page.getByTestId("scheduled-task-create-trigger").click();
   const createForm = page.getByTestId("scheduled-task-create-form");
   await createForm.getByRole("button", { name: "One-time" }).click();
   await createForm.getByLabel("Run at").fill("2026-07-02T09:00");
@@ -121,6 +128,12 @@ test("user can pause a scheduled task from the detail pane", async ({
   });
 
   await page.goto("/workspace/scheduled-tasks");
+  await page
+    .getByTestId("scheduled-task-item-task-1")
+    .getByRole("button", {
+      name: "Pausable task",
+    })
+    .click();
   const detail = page.getByTestId("scheduled-task-detail");
   await detail.getByRole("button", { name: "Pause" }).click();
   await expect(page.getByTestId("scheduled-task-item-task-1")).toBeVisible();
@@ -154,7 +167,16 @@ test("trigger shows a run entry in the detail pane", async ({ page }) => {
   });
 
   await page.goto("/workspace/scheduled-tasks");
-  await page.getByRole("button", { name: "Trigger now" }).click();
+  await page
+    .getByTestId("scheduled-task-item-task-1")
+    .getByRole("button", {
+      name: "Triggerable task",
+    })
+    .click();
+  await page
+    .getByTestId("scheduled-task-detail")
+    .getByRole("button", { name: "Trigger now" })
+    .click();
   await expect(page.getByTestId("scheduled-task-runs")).toContainText("1 run");
   await expect(
     page.getByTestId("scheduled-task-run-list").getByText(/Manual · Success/i),
@@ -205,12 +227,21 @@ test("detail pane falls back to a visible task after filters hide the selected t
   });
 
   await page.goto("/workspace/scheduled-tasks");
-  await page.getByTestId("scheduled-task-item-task-paused").click();
+  await page
+    .getByTestId("scheduled-task-item-task-paused")
+    .getByRole("button", {
+      name: "Paused task",
+    })
+    .click();
   await expect(
     page.getByTestId("scheduled-task-detail").getByText("Paused task"),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Enabled", exact: true }).click();
+  await page
+    .getByTestId("scheduled-task-status-filter")
+    .getByRole("combobox")
+    .click();
+  await page.getByRole("option", { name: "Enabled", exact: true }).click();
 
   await expect(
     page.getByTestId("scheduled-task-detail").getByText("Enabled task"),

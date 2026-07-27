@@ -115,6 +115,7 @@ Tool-calling AI messages can contain user-visible text as well as `tool_calls`. 
 - **Imports**: Enforced ordering (builtin → external → internal → parent → sibling), alphabetized, newlines between groups. Use inline type imports: `import { type Foo }`.
 - **Unused variables**: Prefix with `_`.
 - **Class names**: Use `cn()` from `@/lib/utils` for conditional Tailwind classes.
+- **Workspace kit** (`src/components/component/`): full map in the barrel comment at top of `index.ts`. Pages compose kit pieces; extend via `className`, `DialogSlotField`, or domain wrappers under `workspace/<feature>/` — do not copy layout/markup per page.
 - **Path alias**: `@/*` maps to `src/*`.
 - **Components**: `ui/` and `ai-elements/` are generated from registries (Shadcn, MagicUI, React Bits, Vercel AI SDK) — don't manually edit these.
 

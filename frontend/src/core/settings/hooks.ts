@@ -1,8 +1,19 @@
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import {
+  DEFAULT_APPEARANCE_ACCENT,
   DEFAULT_LOCAL_SETTINGS,
+  applyAppearanceAccent,
   applyThreadModelOverride,
+  readAppearanceAccent,
+  saveAppearanceAccent,
+  type AppearanceAccentId,
   type LocalSettings,
 } from "./local";
 import {
@@ -56,4 +67,26 @@ export function useThreadSettings(
   );
 
   return [settings, setSettings];
+}
+
+export function useAppearanceAccent() {
+  const [accent, setAccentState] = useState<AppearanceAccentId>(() =>
+    typeof window === "undefined"
+      ? DEFAULT_APPEARANCE_ACCENT
+      : readAppearanceAccent(),
+  );
+
+  useEffect(() => {
+    const id = readAppearanceAccent();
+    applyAppearanceAccent(id);
+    setAccentState(id);
+  }, []);
+
+  const setAccent = useCallback((id: AppearanceAccentId) => {
+    saveAppearanceAccent(id);
+    applyAppearanceAccent(id);
+    setAccentState(id);
+  }, []);
+
+  return { accent, setAccent };
 }

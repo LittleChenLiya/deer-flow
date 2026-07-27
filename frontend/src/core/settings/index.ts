@@ -1,2 +1,6 @@
-export { useLocalSettings, useThreadSettings } from "./hooks";
-export type { LocalSettings } from "./local";
+export {
+  useAppearanceAccent,
+  useLocalSettings,
+  useThreadSettings,
+} from "./hooks";
+export type { AppearanceAccentId, LocalSettings } from "./local";

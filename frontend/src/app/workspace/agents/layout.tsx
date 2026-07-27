@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { AgentsFeatureDisabled } from "@/components/workspace/agents/agents-feature-disabled";
+import { AgentsFeatureDisabled } from "@/components/workspace/agents";
 import { useAgentsApiEnabled } from "@/core/agents";
 import { useI18n } from "@/core/i18n/hooks";
 
