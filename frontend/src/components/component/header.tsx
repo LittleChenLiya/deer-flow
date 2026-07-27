@@ -32,7 +32,12 @@ export function HeaderCreateButton({
       type="button"
       variant={variant}
       size={size}
-      className={cn(headerButtonClass, className)}
+      className={cn(
+        headerButtonClass,
+        variant === "default" &&
+          "bg-primary text-primary-foreground hover:bg-primary/90 border-transparent",
+        className,
+      )}
       {...props}
     >
       <HeaderActionPlusGlyph />

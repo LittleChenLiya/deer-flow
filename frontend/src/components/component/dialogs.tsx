@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2Icon } from "lucide-react";
+import { CheckIcon, Trash2Icon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,6 @@ import {
   dialogFieldControlClass,
   dialogFooterClass,
   dialogFormActionCancelGlyphClass,
-  dialogFormActionConfirmGlyphClass,
   dialogFormActionGlyphClass,
   dialogActionIconProps,
   dialogPrimaryButtonClass,
@@ -590,9 +589,7 @@ export function FormActions({
         data-testid={confirmButtonTestId}
       >
         {confirmVariant === "default" ? (
-          <span aria-hidden className={dialogFormActionConfirmGlyphClass}>
-            ✓
-          </span>
+          <CheckIcon aria-hidden {...dialogActionIconProps} />
         ) : confirmVariant === "outline-delete" ? (
           <Trash2Icon {...dialogActionIconProps} />
         ) : null}

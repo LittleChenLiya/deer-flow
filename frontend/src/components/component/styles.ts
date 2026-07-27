@@ -11,7 +11,7 @@ export const headerButtonClass =
 
 /** Lucide stroke shared by kit action icons (header, list rows, dialogs). */
 export const actionIconProps = {
-  strokeWidth: 3,
+  strokeWidth: 2,
   absoluteStrokeWidth: true,
 } as const;
 
@@ -47,11 +47,6 @@ export const dialogFormActionGlyphClass = cn(formActionGlyphClass, "size-4");
 export const dialogFormActionCancelGlyphClass = cn(
   dialogFormActionGlyphClass,
   "text-[1.0625rem] tracking-tight",
-);
-
-export const dialogFormActionConfirmGlyphClass = cn(
-  dialogFormActionGlyphClass,
-  "text-sm",
 );
 
 /** Page-header create (+) — same glyph weight as dialog close (×); spacing from `headerButtonClass` gap. */

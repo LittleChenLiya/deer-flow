@@ -21,7 +21,7 @@
  * | **Controls** | `FormSelect`, `ToggleGroupControl`, `SearchInput`, `FormField` |
  * | **Feedback** | `ErrorAlert`, `ListEmpty`, `PanelEmpty`, `ConfirmDialog` |
  *
- * **Action icons:** create `+` → `HeaderCreateButton`; dialog ×/✓ glyphs; list/delete Lucide → `rowActionIconProps` / `dialogActionIconProps`; stroke root → `actionIconProps`.
+ * **Action icons:** create `+` → `HeaderCreateButton`; dialog × glyph; save/list/delete Lucide → `dialogActionIconProps` / `rowActionIconProps`; stroke root → `actionIconProps`.
  */
 
 export { CardAction, cardActionClass } from "./item";
