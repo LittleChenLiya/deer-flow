@@ -42,8 +42,6 @@ function scheduleFromTask(task: ScheduledTask): ScheduleValue {
   };
 }
 
-const createDialogSectionContentClass = "gap-3 pt-4 pb-4";
-
 export function ScheduledTaskFormDialog({
   open,
   onOpenChange,
@@ -134,8 +132,7 @@ export function ScheduledTaskFormDialog({
     setScheduleSeedKey((n) => n + 1);
   };
 
-  const showScheduleInput =
-    scheduleSeedKey > 0 && (isCreate || Boolean(task));
+  const showScheduleInput = scheduleSeedKey > 0 && (isCreate || Boolean(task));
 
   const hasSchedule =
     Boolean(schedule.schedule_spec.cron) ||
@@ -231,10 +228,7 @@ export function ScheduledTaskFormDialog({
           }
         >
           {isCreate ? (
-            <DialogFormSection
-              title={st.recipes.label}
-              contentClassName={createDialogSectionContentClass}
-            >
+            <DialogFormSection title={st.recipes.label} variant="plain">
               <div className="overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <div
                   className="flex w-max min-w-0 flex-nowrap items-center gap-1.5"
@@ -260,10 +254,7 @@ export function ScheduledTaskFormDialog({
           ) : null}
 
           {isCreate ? (
-            <DialogFormSection
-              title={st.detail.contextMode}
-              contentClassName={createDialogSectionContentClass}
-            >
+            <DialogFormSection title={st.detail.contextMode} variant="plain">
               <DialogToggleGroupField
                 colSpan="full"
                 value={contextMode}
@@ -294,7 +285,7 @@ export function ScheduledTaskFormDialog({
               ) : null}
             </DialogFormSection>
           ) : task ? (
-            <DialogFormSection title={st.detail.contextMode}>
+            <DialogFormSection title={st.detail.contextMode} variant="plain">
               <DialogFieldGrid>
                 <DialogSlotField label={st.detail.contextMode}>
                   <div className={readOnlyFieldClass}>
@@ -318,7 +309,7 @@ export function ScheduledTaskFormDialog({
             </DialogFormSection>
           ) : null}
 
-          <DialogFormSection title={st.sections.content}>
+          <DialogFormSection title={st.sections.content} variant="plain">
             <DialogFieldGrid>
               <DialogInputField
                 label={st.create.taskTitle}
@@ -337,11 +328,12 @@ export function ScheduledTaskFormDialog({
                 autoGrow
                 disabled={isPending}
                 colSpan="full"
+                textareaClassName="resize-none"
               />
             </DialogFieldGrid>
           </DialogFormSection>
 
-          <DialogFormSection title={st.sections.schedule}>
+          <DialogFormSection title={st.sections.schedule} variant="plain">
             {showScheduleInput ? (
               <ScheduledTaskScheduleInput
                 key={scheduleSeedKey}

@@ -39,7 +39,7 @@ test("scheduled tasks page is reachable from sidebar", async ({ page }) => {
     })
     .click();
   await expect(
-    page.getByRole("button", { name: /Daily summary/i }),
+    page.getByTestId("scheduled-task-detail").getByText("Summarize thread"),
   ).toBeVisible();
   await expect(page.getByTestId("scheduled-task-runs")).toContainText("0 runs");
 });
@@ -99,6 +99,61 @@ test("user can create a scheduled task from the page", async ({ page }) => {
   await expect(
     page.getByTestId("scheduled-task-detail").getByText("Summarize thread"),
   ).toBeVisible();
+});
+
+test("scheduled task forms use plain sections and a fixed prompt resize mode", async ({
+  page,
+}) => {
+  mockLangGraphAPI(page, {
+    threads: [],
+    scheduledTasks: [
+      {
+        id: "task-1",
+        thread_id: "thread-1",
+        title: "Editable task",
+        prompt: "Summarize thread",
+        schedule_type: "cron",
+        schedule_spec: { cron: "0 9 * * *" },
+        timezone: "UTC",
+        status: "enabled",
+        next_run_at: "2026-07-02T01:00:00+00:00",
+        last_run_at: null,
+        last_run_id: null,
+        last_error: null,
+        run_count: 0,
+        created_at: "2026-07-01T00:00:00+00:00",
+        updated_at: "2026-07-01T00:00:00+00:00",
+      },
+    ],
+  });
+
+  await page.goto("/workspace/scheduled-tasks");
+  await page.getByTestId("scheduled-task-create-trigger").click();
+
+  const createForm = page.getByTestId("scheduled-task-create-form");
+  await expect(createForm.locator('[data-slot="card"]')).toHaveCount(0);
+  await expect(createForm.getByRole("textbox", { name: "Prompt" })).toHaveCSS(
+    "resize",
+    "none",
+  );
+  await page.keyboard.press("Escape");
+  await expect(createForm).toBeHidden();
+
+  await page
+    .getByTestId("scheduled-task-item-task-1")
+    .getByRole("button", { name: "Editable task" })
+    .click();
+  await page
+    .getByTestId("scheduled-task-detail")
+    .getByRole("button", { name: "Edit" })
+    .click();
+
+  const editForm = page.getByTestId("scheduled-task-edit-form");
+  await expect(editForm.locator('[data-slot="card"]')).toHaveCount(0);
+  await expect(editForm.getByRole("textbox", { name: "Prompt" })).toHaveCSS(
+    "resize",
+    "none",
+  );
 });
 
 test("user can pause a scheduled task from the detail pane", async ({
