@@ -336,13 +336,6 @@ export interface Translations {
       skipped: string;
       interrupted: string;
     };
-    recipes: {
-      label: string;
-      trending: { title: string; desc: string };
-      news: { title: string; desc: string };
-      issues: { title: string; desc: string };
-      weekly: { title: string; desc: string };
-    };
   };
 
   // Agents

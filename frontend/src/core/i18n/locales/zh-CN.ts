@@ -311,13 +311,7 @@ export const zhCN: Translations = {
       sun: "周日",
     },
     preview: "预览",
-    cronFieldLegend: [
-      "分 0–59",
-      "时 0–23",
-      "日",
-      "月",
-      "周 0–7",
-    ],
+    cronFieldLegend: ["分 0–59", "时 0–23", "日", "月", "周 0–7"],
     create: {
       title: "创建定时任务",
       headerAction: "新建任务",
@@ -400,25 +394,6 @@ export const zhCN: Translations = {
       failed: "失败",
       skipped: "跳过",
       interrupted: "已中断",
-    },
-    recipes: {
-      label: "快速创建",
-      trending: {
-        title: "GitHub Trending 日榜",
-        desc: "总结今日 Trending 前十仓库",
-      },
-      news: {
-        title: "每日科技新闻摘要",
-        desc: "收集并总结当日科技要闻",
-      },
-      issues: {
-        title: "GitHub Issue 分诊",
-        desc: "分诊某仓库的 open issues（填入 {{repo}}）",
-      },
-      weekly: {
-        title: "每周周报",
-        desc: "每周一汇总一周工作",
-      },
     },
   },
 

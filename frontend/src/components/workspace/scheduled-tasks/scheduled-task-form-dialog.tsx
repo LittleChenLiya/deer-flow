@@ -15,7 +15,6 @@ import {
   dialogSaveFooterProps,
   readOnlyFieldClass,
 } from "@/components/component";
-import { Button } from "@/components/ui/button";
 import {
   ScheduledTaskScheduleInput,
   type ScheduleValue,
@@ -26,7 +25,6 @@ import {
   useDeleteScheduledTask,
   useUpdateScheduledTask,
 } from "@/core/scheduled-tasks/hooks";
-import { RECIPES, type Recipe } from "@/core/scheduled-tasks/recipes";
 import type { ScheduledTask } from "@/core/scheduled-tasks/types";
 import { cn } from "@/lib/utils";
 
@@ -121,16 +119,6 @@ export function ScheduledTaskFormDialog({
     // does not wipe edits in progress.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isCreate, task?.id, presetThreadId]);
-
-  const applyRecipe = (recipe: Recipe) => {
-    const labels = st.recipes[recipe.titleKey];
-    setTitle(labels.title);
-    setPrompt(recipe.prompt);
-    setSchedule(recipe.schedule);
-    setContextMode("fresh_thread_per_run");
-    setTargetThreadId("");
-    setScheduleSeedKey((n) => n + 1);
-  };
 
   const showScheduleInput = scheduleSeedKey > 0 && (isCreate || Boolean(task));
 
@@ -227,32 +215,6 @@ export function ScheduledTaskFormDialog({
             isCreate ? "scheduled-task-create-form" : "scheduled-task-edit-form"
           }
         >
-          {isCreate ? (
-            <DialogFormSection title={st.recipes.label} variant="plain">
-              <div className="overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <div
-                  className="flex w-max min-w-0 flex-nowrap items-center gap-1.5"
-                  data-testid="schedule-recipes"
-                >
-                  {RECIPES.map((recipe) => (
-                    <Button
-                      key={recipe.id}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="border-border/70 h-7 shrink-0 gap-1 px-2.5 text-xs font-normal shadow-xs"
-                      disabled={isPending}
-                      onClick={() => applyRecipe(recipe)}
-                    >
-                      <span aria-hidden>{recipe.icon}</span>
-                      {st.recipes[recipe.titleKey].title}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </DialogFormSection>
-          ) : null}
-
           {isCreate ? (
             <DialogFormSection title={st.detail.contextMode} variant="plain">
               <DialogToggleGroupField

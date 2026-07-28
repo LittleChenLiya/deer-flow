@@ -325,13 +325,7 @@ export const enUS: Translations = {
       sun: "Sun",
     },
     preview: "Preview",
-    cronFieldLegend: [
-      "Min 0–59",
-      "Hour 0–23",
-      "Day",
-      "Month",
-      "Weekday 0–7",
-    ],
+    cronFieldLegend: ["Min 0–59", "Hour 0–23", "Day", "Month", "Weekday 0–7"],
     create: {
       title: "Create scheduled task",
       headerAction: "New task",
@@ -415,25 +409,6 @@ export const enUS: Translations = {
       failed: "Failed",
       skipped: "Skipped",
       interrupted: "Interrupted",
-    },
-    recipes: {
-      label: "Quick create",
-      trending: {
-        title: "GitHub Trending daily",
-        desc: "Summarize today's top 10 trending repos",
-      },
-      news: {
-        title: "Daily tech news digest",
-        desc: "Collect and summarize the day's top tech news",
-      },
-      issues: {
-        title: "GitHub Issue triage",
-        desc: "Triage a repo's open issues (fill in {{repo}})",
-      },
-      weekly: {
-        title: "Weekly report",
-        desc: "Compile a weekly summary, every Monday",
-      },
     },
   },
 

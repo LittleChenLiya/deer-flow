@@ -131,6 +131,7 @@ test("scheduled task forms use plain sections and a fixed prompt resize mode", a
   await page.getByTestId("scheduled-task-create-trigger").click();
 
   const createForm = page.getByTestId("scheduled-task-create-form");
+  await expect(createForm.getByTestId("schedule-recipes")).toHaveCount(0);
   await expect(createForm.locator('[data-slot="card"]')).toHaveCount(0);
   await expect(createForm.getByRole("textbox", { name: "Prompt" })).toHaveCSS(
     "resize",
