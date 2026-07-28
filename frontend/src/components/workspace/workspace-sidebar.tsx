@@ -5,12 +5,12 @@ import {
   SidebarHeader,
   SidebarContent,
   SidebarFooter,
-  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
 
 import { WorkspaceChannelsList } from "./channels/workspace-channels-list";
 import { RecentChatList } from "./recent-chat-list";
+import { ResizableSidebarRail } from "./resizable-sidebar-rail";
 import { WorkspaceHeader } from "./workspace-header";
 import { WorkspaceNavChatList } from "./workspace-nav-chat-list";
 import { WorkspaceNavMenu } from "./workspace-nav-menu";
@@ -33,7 +33,7 @@ export function WorkspaceSidebar({
         <SidebarFooter>
           <WorkspaceNavMenu />
         </SidebarFooter>
-        <SidebarRail />
+        <ResizableSidebarRail />
       </Sidebar>
     </>
   );

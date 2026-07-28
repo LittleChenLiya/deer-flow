@@ -267,6 +267,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0.0098 87.47);
   --sidebar-ring: oklch(0.708 0 0);
+  --workspace-accent: var(--primary);
 }
 
 .dark {
@@ -302,6 +303,95 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
   font-weight: 300;
+}
+
+:root[data-accent="ocean"] {
+  --primary: oklch(0.52 0.16 255);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.65 0.14 255);
+  --sidebar-primary: oklch(0.52 0.16 255);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-ring: oklch(0.65 0.14 255);
+}
+
+.dark[data-accent="ocean"] {
+  --primary: oklch(0.72 0.14 255);
+  --primary-foreground: oklch(0.2 0.04 255);
+  --ring: oklch(0.72 0.14 255);
+  --sidebar-primary: oklch(0.72 0.14 255);
+  --sidebar-primary-foreground: oklch(0.2 0.04 255);
+}
+
+:root[data-accent="forest"] {
+  --primary: oklch(0.52 0.11 155);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.62 0.1 155);
+  --sidebar-primary: oklch(0.52 0.11 155);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-ring: oklch(0.62 0.1 155);
+}
+
+.dark[data-accent="forest"] {
+  --primary: oklch(0.72 0.12 155);
+  --primary-foreground: oklch(0.2 0.04 155);
+  --ring: oklch(0.72 0.12 155);
+  --sidebar-primary: oklch(0.72 0.12 155);
+  --sidebar-primary-foreground: oklch(0.2 0.04 155);
+}
+
+:root[data-accent="grape"] {
+  --primary: oklch(0.56 0.18 300);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.68 0.16 300);
+  --sidebar-primary: oklch(0.56 0.18 300);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-ring: oklch(0.68 0.16 300);
+}
+
+.dark[data-accent="grape"] {
+  --primary: oklch(0.74 0.16 300);
+  --primary-foreground: oklch(0.2 0.05 300);
+  --ring: oklch(0.74 0.16 300);
+  --sidebar-primary: oklch(0.74 0.16 300);
+  --sidebar-primary-foreground: oklch(0.2 0.05 300);
+}
+
+:root[data-accent="sunset"] {
+  --primary: oklch(0.62 0.15 55);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.72 0.13 55);
+  --sidebar-primary: oklch(0.62 0.15 55);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-ring: oklch(0.72 0.13 55);
+}
+
+.dark[data-accent="sunset"] {
+  --primary: oklch(0.78 0.14 55);
+  --primary-foreground: oklch(0.22 0.05 55);
+  --ring: oklch(0.78 0.14 55);
+  --sidebar-primary: oklch(0.78 0.14 55);
+  --sidebar-primary-foreground: oklch(0.22 0.05 55);
+}
+
+:root[data-accent="rose"] {
+  --primary: oklch(0.58 0.16 12);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.7 0.14 12);
+  --sidebar-primary: oklch(0.58 0.16 12);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-ring: oklch(0.7 0.14 12);
+}
+
+.dark[data-accent="rose"] {
+  --primary: oklch(0.72 0.14 12);
+  --primary-foreground: oklch(0.22 0.05 12);
+  --ring: oklch(0.72 0.14 12);
+  --sidebar-primary: oklch(0.72 0.14 12);
+  --sidebar-primary-foreground: oklch(0.22 0.05 12);
+}
+
+:root[data-accent] {
+  --workspace-accent: var(--primary);
 }
 
 @layer base {
@@ -428,6 +518,195 @@
   .katex-display::-webkit-scrollbar-thumb {
     background: color-mix(in oklch, var(--muted-foreground) 35%, transparent);
     border-radius: 999px;
+  }
+
+  /* Workspace kit surfaces (/workspace) — see components/component/styles.ts */
+  .workspace-shell {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .workspace-shell::before {
+    content: none;
+  }
+
+  .dark .workspace-shell::before {
+    content: none;
+  }
+
+  .workspace-shell > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  html[data-sidebar-dragging] [data-slot="sidebar-container"],
+  html[data-sidebar-dragging] [data-slot="sidebar-gap"] {
+    transition: none !important;
+  }
+
+  html[data-sidebar-dragging] [data-slot="sidebar-rail"] {
+    transition: none !important;
+  }
+
+  .workspace-panel {
+    overflow: hidden;
+    border-radius: calc(var(--radius) + 4px);
+    border: 1px solid color-mix(in oklch, var(--border) 65%, transparent);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .dark .workspace-panel {
+    border-color: oklch(1 0 0 / 10%);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .workspace-glass-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid color-mix(in oklch, var(--border) 45%, transparent);
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .workspace-header-accent {
+    width: 3px;
+    height: 1.25rem;
+    border-radius: 999px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--workspace-accent) 82%, white),
+      color-mix(in oklch, var(--workspace-accent) 68%, black)
+    );
+    box-shadow: 0 0 14px
+      color-mix(in oklch, var(--workspace-accent) 40%, transparent);
+  }
+
+  .workspace-page-body {
+    position: relative;
+  }
+
+  .workspace-page-body > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .workspace-item-card {
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  @media (hover: hover) {
+    .workspace-item-card:hover {
+      border-color: color-mix(
+        in oklch,
+        var(--workspace-accent) 72%,
+        var(--border)
+      );
+      box-shadow:
+        0 0 0 1px color-mix(in oklch, var(--workspace-accent) 32%, transparent),
+        0 6px 18px color-mix(in oklch, var(--workspace-accent) 10%, transparent);
+    }
+  }
+
+  @media (hover: hover) {
+    .dark .workspace-item-card:hover {
+      border-color: color-mix(
+        in oklch,
+        var(--workspace-accent) 58%,
+        transparent
+      );
+      box-shadow:
+        0 0 0 1px color-mix(in oklch, var(--workspace-accent) 28%, transparent),
+        0 6px 18px color-mix(in oklch, var(--workspace-accent) 12%, transparent);
+    }
+  }
+
+  .workspace-item-icon {
+    box-sizing: border-box;
+    display: flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    justify-self: start;
+    border-radius: calc(var(--radius) + 2px);
+    border: 1px solid color-mix(in oklch, var(--border) 80%, transparent);
+    background: transparent;
+    color: var(--muted-foreground);
+  }
+
+  .dark .workspace-item-icon {
+    border-color: oklch(1 0 0 / 12%);
+  }
+
+  .workspace-item-icon--knowledge,
+  .workspace-item-icon--agent,
+  .workspace-item-icon--api {
+    border-color: color-mix(
+      in oklch,
+      var(--workspace-accent) 42%,
+      var(--border)
+    );
+    background: transparent;
+    color: var(--workspace-accent);
+  }
+
+  .dark .workspace-item-icon--knowledge,
+  .dark .workspace-item-icon--agent,
+  .dark .workspace-item-icon--api {
+    border-color: color-mix(in oklch, var(--workspace-accent) 38%, transparent);
+    background: transparent;
+    color: var(--workspace-accent);
+  }
+
+  /* Agent cards: softer icon frame — accent on glyph, border aligned with panel */
+  .workspace-item-card .workspace-item-icon--agent {
+    height: 2.25rem;
+    width: 2.25rem;
+    border-radius: var(--radius);
+    border-color: color-mix(in oklch, var(--border) 75%, transparent);
+    color: color-mix(in oklch, var(--workspace-accent) 90%, var(--foreground));
+  }
+
+  .dark .workspace-item-card .workspace-item-icon--agent {
+    border-color: oklch(1 0 0 / 10%);
+    color: var(--workspace-accent);
+  }
+
+  .workspace-shell
+    [data-slot="button"][data-variant="outline"]:hover:not(:disabled) {
+    border-color: color-mix(
+      in oklch,
+      var(--workspace-accent) 68%,
+      var(--border)
+    );
+  }
+
+  .dark
+    .workspace-shell
+    [data-slot="button"][data-variant="outline"]:hover:not(:disabled) {
+    border-color: color-mix(in oklch, var(--workspace-accent) 55%, transparent);
+  }
+
+  .workspace-shell [data-slot="input"]:focus-visible,
+  .workspace-shell [data-slot="textarea"]:focus-visible,
+  .workspace-shell [data-slot="select-trigger"]:focus-visible {
+    border-color: color-mix(
+      in oklch,
+      var(--workspace-accent) 76%,
+      var(--border)
+    );
+  }
+
+  .dark .workspace-shell [data-slot="input"]:focus-visible,
+  .dark .workspace-shell [data-slot="textarea"]:focus-visible,
+  .dark .workspace-shell [data-slot="select-trigger"]:focus-visible {
+    border-color: color-mix(in oklch, var(--workspace-accent) 58%, transparent);
   }
 }
 

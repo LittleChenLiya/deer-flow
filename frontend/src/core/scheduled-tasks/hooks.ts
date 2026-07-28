@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useI18n } from "@/core/i18n/hooks";
@@ -15,6 +20,32 @@ import {
   updateScheduledTask,
   type ScheduledTaskPayload,
 } from "./api";
+import type { ScheduledTask } from "./types";
+
+function upsertScheduledTaskInList(
+  prev: ScheduledTask[] | undefined,
+  task: ScheduledTask,
+): ScheduledTask[] {
+  if (!prev) {
+    return [task];
+  }
+  return [task, ...prev.filter((entry) => entry.id !== task.id)];
+}
+
+function prependScheduledTaskCaches(
+  queryClient: QueryClient,
+  task: ScheduledTask,
+) {
+  queryClient.setQueryData<ScheduledTask[]>(["scheduled-tasks"], (prev) =>
+    upsertScheduledTaskInList(prev, task),
+  );
+  if (task.thread_id) {
+    queryClient.setQueryData<ScheduledTask[]>(
+      ["scheduled-tasks", "thread", task.thread_id],
+      (prev) => upsertScheduledTaskInList(prev, task),
+    );
+  }
+}
 
 export function useScheduledTasks() {
   return useQuery({
@@ -48,7 +79,8 @@ export function useCreateScheduledTask() {
   const { t } = useI18n();
   return useMutation({
     mutationFn: (payload: ScheduledTaskPayload) => createScheduledTask(payload),
-    onSuccess: () => {
+    onSuccess: (created) => {
+      prependScheduledTaskCaches(queryClient, created);
       void queryClient.invalidateQueries({ queryKey: ["scheduled-tasks"] });
     },
     onError: (error: Error) => {

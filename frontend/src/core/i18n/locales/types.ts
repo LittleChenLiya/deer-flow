@@ -11,12 +11,15 @@ export interface Translations {
     home: string;
     settings: string;
     delete: string;
+    deleteConfirm: string;
     edit: string;
     rename: string;
     renameFailed: string;
     share: string;
     openInNewWindow: string;
     close: string;
+    back: string;
+    confirmTitle: string;
     more: string;
     search: string;
     loadMore: string;
@@ -33,6 +36,7 @@ export interface Translations {
     preview: string;
     cancel: string;
     save: string;
+    saving: string;
     install: string;
     create: string;
     import: string;
@@ -207,6 +211,14 @@ export interface Translations {
 
   // Scheduled tasks
   scheduledTasks: {
+    pageDescription: string;
+    listTitle: string;
+    countTotal: (count: number) => string;
+    countFiltered: (shown: number, total: number) => string;
+    emptyList: string;
+    filterEmpty: string;
+    searchPlaceholder: string;
+    searchEmpty: string;
     scheduleType: { cron: string; once: string };
     preset: {
       label: string;
@@ -236,9 +248,10 @@ export interface Translations {
       sun: string;
     };
     preview: string;
-    cronHelp: string;
+    cronFieldLegend: [string, string, string, string, string];
     create: {
       title: string;
+      headerAction: string;
       taskTitle: string;
       prompt: string;
       submit: string;
@@ -248,6 +261,10 @@ export interface Translations {
       fresh: string;
       reuse: string;
       threadIdPlaceholder: string;
+    };
+    sections: {
+      content: string;
+      schedule: string;
     };
     filters: {
       allStatuses: string;
@@ -293,6 +310,7 @@ export interface Translations {
       delete: string;
     };
     edit: {
+      title: string;
       titlePlaceholder: string;
       promptPlaceholder: string;
       submit: string;
@@ -327,6 +345,9 @@ export interface Translations {
   agents: {
     title: string;
     description: string;
+    listTitle: string;
+    countTotal: (count: number) => string;
+    countFiltered: (shown: number, total: number) => string;
     newAgent: string;
     emptyTitle: string;
     emptyDescription: string;
@@ -377,6 +398,27 @@ export interface Translations {
     settingsSaved: string;
     settingsInvalidTemperature: string;
     settingsInvalidMaxTokens: string;
+    searchPlaceholder: string;
+    searchEmpty: string;
+    formCreateTitle: string;
+    editPageTitle: string;
+    sectionBasic: string;
+    fieldName: string;
+    fieldDescription: string;
+    fieldModel: string;
+    sectionModel: string;
+    soulTitle: string;
+    soulHint: string;
+    soulGenerate: string;
+    soulGenerateHint: string;
+    soulGenerating: string;
+    soulGenerateError: string;
+    soulGenerated: string;
+    sectionCapability: string;
+    createSuccess: string;
+    settingsNamePlaceholder: string;
+    descriptionPlaceholder: string;
+    modelInherit: string;
   };
 
   // Breadcrumb
@@ -411,6 +453,13 @@ export interface Translations {
   // Chats
   chats: {
     searchChats: string;
+    listTitle: string;
+    pageTitle: string;
+    pageDescription: string;
+    countTotal: (count: number) => string;
+    countFiltered: (shown: number, total: number) => string;
+    searchEmpty: string;
+    emptyList: string;
     loadMoreToSearch: string;
     loadingMore: string;
     loadOlderChats: string;
@@ -678,8 +727,20 @@ export interface Translations {
       };
     };
     appearance: {
-      themeTitle: string;
-      themeDescription: string;
+      sectionTitle: string;
+      sectionDescription: string;
+      appearanceModeTitle: string;
+      appearanceModeDescription: string;
+      themeColorTitle: string;
+      themeColorDescription: string;
+      accents: {
+        default: string;
+        ocean: string;
+        forest: string;
+        grape: string;
+        sunset: string;
+        rose: string;
+      };
       system: string;
       light: string;
       dark: string;

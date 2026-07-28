@@ -3,7 +3,6 @@
 import {
   DownloadIcon,
   PenLineIcon,
-  PlusIcon,
   Trash2Icon,
   UploadIcon,
 } from "lucide-react";
@@ -11,6 +10,12 @@ import Link from "next/link";
 import { useDeferredValue, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  actionIconProps,
+  HeaderCreateButton,
+  HeaderOutlineButton,
+  headerActionIconProps,
+} from "@/components/component";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -597,26 +602,23 @@ export function MemorySettingsPage() {
                   className="hidden"
                   onChange={(event) => void handleImportFileSelection(event)}
                 />
-                <Button
-                  variant="outline"
+                <HeaderOutlineButton
+                  leading={<UploadIcon {...headerActionIconProps} />}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={importMemoryMutation.isPending}
                 >
-                  <UploadIcon className="mr-2 h-4 w-4" />
                   {importButton}
-                </Button>
-                <Button
-                  variant="outline"
+                </HeaderOutlineButton>
+                <HeaderOutlineButton
+                  leading={<DownloadIcon {...headerActionIconProps} />}
                   onClick={() => void handleExportMemory()}
                   disabled={isExporting}
                 >
-                  <DownloadIcon className="mr-2 h-4 w-4" />
                   {isExporting ? t.common.loading : exportButton}
-                </Button>
-                <Button variant="outline" onClick={openCreateFactDialog}>
-                  <PlusIcon className="mr-2 h-4 w-4" />
+                </HeaderOutlineButton>
+                <HeaderCreateButton onClick={openCreateFactDialog}>
                   {addFactLabel}
-                </Button>
+                </HeaderCreateButton>
                 <Button
                   variant="destructive"
                   className="ml-auto"
@@ -723,7 +725,10 @@ export function MemorySettingsPage() {
                               title={t.common.edit}
                               aria-label={t.common.edit}
                             >
-                              <PenLineIcon className="h-4 w-4" />
+                              <PenLineIcon
+                                {...actionIconProps}
+                                className="size-4 shrink-0"
+                              />
                             </Button>
 
                             <Button
@@ -735,7 +740,10 @@ export function MemorySettingsPage() {
                               title={t.common.delete}
                               aria-label={t.common.delete}
                             >
-                              <Trash2Icon className="h-4 w-4" />
+                              <Trash2Icon
+                                {...actionIconProps}
+                                className="size-4 shrink-0"
+                              />
                             </Button>
                           </div>
                         </div>

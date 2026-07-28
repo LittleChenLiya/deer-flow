@@ -2,7 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import {
+  DialogFieldGrid,
+  FormField,
+  ToggleGroupControl,
+  dialogFieldControlClass,
+  readOnlyFieldClass,
+  selectTriggerWrapClass,
+  workspaceFieldFocusClass,
+} from "@/components/component";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -23,8 +31,8 @@ import {
   type CronParts,
   type CronPreset,
   type ScheduleLocale,
-  type Weekday,
 } from "@/core/scheduled-tasks/cron";
+import { cn } from "@/lib/utils";
 
 export type ScheduleValue = {
   schedule_type: "once" | "cron";
@@ -78,12 +86,112 @@ function timezoneOptions(): string[] {
 
 const TIMEZONE_OPTIONS = timezoneOptions();
 
+/** Same control width across hourly / daily / weekly / monthly / custom detail fields. */
+const scheduleDetailInputWidthClass = "w-full max-w-[20rem]";
+
+const fieldInputClass = cn(
+  dialogFieldControlClass,
+  workspaceFieldFocusClass,
+  "min-w-0",
+  scheduleDetailInputWidthClass,
+);
+
+const selectTriggerClass = cn(
+  "w-full min-w-0",
+  selectTriggerWrapClass,
+  dialogFieldControlClass,
+);
+
+function ScheduleTimezoneSelect({
+  timezone,
+  onTimezoneChange,
+  fieldClassName,
+}: {
+  timezone: string;
+  onTimezoneChange: (tz: string) => void;
+  fieldClassName?: string;
+}) {
+  const labels = useI18n().t.scheduledTasks;
+
+  return (
+    <FormField
+      label={labels.fields.timezone}
+      className={cn("min-w-0", fieldClassName)}
+    >
+      <Select value={timezone} onValueChange={onTimezoneChange}>
+        <SelectTrigger
+          className={cn(selectTriggerClass, scheduleDetailInputWidthClass)}
+          data-testid="schedule-timezone"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {TIMEZONE_OPTIONS.map((tzOption) => (
+            <SelectItem key={tzOption} value={tzOption}>
+              {tzOption}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </FormField>
+  );
+}
+
+function CronExpressionFieldLegend({
+  labels,
+  className,
+}: {
+  labels: string[];
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn("flex flex-nowrap justify-end gap-1.5", className)}
+      role="note"
+      aria-label={labels.join(", ")}
+    >
+      {labels.map((label, index) => (
+        <span
+          key={index}
+          className="border-border/45 bg-muted/30 text-muted-foreground inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] leading-none"
+        >
+          <span className="text-foreground/55 font-medium tabular-nums">
+            {index + 1}:
+          </span>
+          <span>{label}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function fieldsFromSchedule(initial: ScheduleValue) {
+  const cron = initial.schedule_spec.cron ?? "0 9 * * *";
+  const parsed = parseCron(cron);
+  return {
+    scheduleType: initial.schedule_type,
+    preset: parsed.preset,
+    parts: parsed.parts,
+    runAtLocal:
+      initial.schedule_type === "once" && initial.schedule_spec.run_at
+        ? utcToZonedLocalInput(
+            initial.schedule_spec.run_at,
+            initial.timezone || "UTC",
+          )
+        : "",
+    timezone: initial.timezone || detectBrowserTimezone(),
+  };
+}
+
 export function ScheduledTaskScheduleInput({
   initial,
+  seedKey,
   onChange,
   scheduleTypeLocked = false,
 }: {
   initial: ScheduleValue;
+  /** When this changes, internal fields re-sync from `initial` (after parent seeds). */
+  seedKey: string | number;
   onChange: (value: ScheduleValue) => void;
   scheduleTypeLocked?: boolean;
 }) {
@@ -91,26 +199,24 @@ export function ScheduledTaskScheduleInput({
   const schedLocale: ScheduleLocale = locale.startsWith("zh") ? "zh" : "en";
   const labels = t.scheduledTasks;
 
+  const seeded = fieldsFromSchedule(initial);
   const [scheduleType, setScheduleType] = useState<"once" | "cron">(
-    initial.schedule_type,
+    seeded.scheduleType,
   );
-  const [preset, setPreset] = useState<CronPreset>(
-    () => parseCron(initial.schedule_spec.cron ?? "0 9 * * *").preset,
-  );
-  const [parts, setParts] = useState<CronParts>(
-    () => parseCron(initial.schedule_spec.cron ?? "0 9 * * *").parts,
-  );
-  const [runAtLocal, setRunAtLocal] = useState<string>(
-    initial.schedule_type === "once" && initial.schedule_spec.run_at
-      ? utcToZonedLocalInput(
-          initial.schedule_spec.run_at,
-          initial.timezone || "UTC",
-        )
-      : "",
-  );
-  const [timezone, setTimezone] = useState<string>(
-    initial.timezone || detectBrowserTimezone(),
-  );
+  const [preset, setPreset] = useState<CronPreset>(seeded.preset);
+  const [parts, setParts] = useState<CronParts>(seeded.parts);
+  const [runAtLocal, setRunAtLocal] = useState<string>(seeded.runAtLocal);
+  const [timezone, setTimezone] = useState<string>(seeded.timezone);
+
+  useEffect(() => {
+    const next = fieldsFromSchedule(initial);
+    setScheduleType(next.scheduleType);
+    setPreset(next.preset);
+    setParts(next.parts);
+    setRunAtLocal(next.runAtLocal);
+    setTimezone(next.timezone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when parent re-seeds
+  }, [seedKey]);
 
   // Hold the latest onChange in a ref so the effect below does not depend on
   // it. This avoids a re-render loop: if the parent passes an inline
@@ -162,171 +268,206 @@ export function ScheduledTaskScheduleInput({
     setPreset(next);
   }
 
-  function toggleWeekday(w: Weekday) {
-    setParts((prev) => {
-      const set = new Set(prev.weekdays ?? []);
-      if (set.has(w)) {
-        if (set.size <= 1) {
-          return prev;
-        }
-        set.delete(w);
-      } else {
-        set.add(w);
-      }
-      return { ...prev, weekdays: WEEKDAYS.filter((d) => set.has(d)) };
-    });
-  }
-
   const preview = describeSchedule(
     { scheduleType, preset, parts, runAtLocal, timezone },
     schedLocale,
   );
 
-  return (
-    <div className="flex flex-col gap-2" data-testid="schedule-input">
-      {!scheduleTypeLocked && (
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={scheduleType === "cron" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setScheduleType("cron")}
-          >
-            {labels.scheduleType.cron}
-          </Button>
-          <Button
-            variant={scheduleType === "once" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setScheduleType("once")}
-          >
-            {labels.scheduleType.once}
-          </Button>
-        </div>
-      )}
-
-      {scheduleType === "cron" ? (
-        <>
-          <Select
-            value={preset}
-            onValueChange={(v) => changePreset(v as CronPreset)}
-          >
-            <SelectTrigger className="w-full" data-testid="schedule-preset">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PRESETS.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {labels.preset[p]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {preset === "hourly" && (
+  const cronPresetDetails = (() => {
+    switch (preset) {
+      case "hourly":
+        return (
+          <FormField label={labels.fields.minute} className="min-w-0">
             <Input
               type="number"
               min={0}
               max={59}
+              className={fieldInputClass}
               value={parts.minute ?? 0}
               onChange={(e) => updateParts({ minute: Number(e.target.value) })}
-              aria-label={labels.fields.minute}
             />
-          )}
-
-          {(preset === "daily" ||
-            preset === "weekly" ||
-            preset === "monthly") && (
+          </FormField>
+        );
+      case "daily":
+        return (
+          <FormField label={labels.fields.time} className="min-w-0">
             <Input
               type="time"
+              className={fieldInputClass}
               value={`${pad2(parts.hour ?? 9)}:${pad2(parts.minute ?? 0)}`}
               onChange={(e) => {
                 const [h, m] = e.target.value.split(":").map(Number);
                 updateParts({ hour: h, minute: m });
               }}
-              aria-label={labels.fields.time}
             />
-          )}
-
-          {preset === "weekly" && (
-            <div className="flex flex-wrap gap-1">
-              <span className="text-muted-foreground w-full text-sm">
-                {labels.fields.weekday}
-              </span>
-              {WEEKDAYS.map((w) => {
-                const active = (parts.weekdays ?? []).includes(w);
-                return (
-                  <Button
-                    key={w}
-                    variant={active ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => toggleWeekday(w)}
-                    aria-pressed={active}
-                  >
-                    {labels.weekdays[w]}
-                  </Button>
-                );
-              })}
-            </div>
-          )}
-
-          {preset === "monthly" && (
-            <Input
-              type="number"
-              min={1}
-              max={31}
-              value={parts.dayOfMonth ?? 1}
-              onChange={(e) =>
-                updateParts({ dayOfMonth: Number(e.target.value) })
-              }
-              aria-label={labels.fields.dayOfMonth}
-            />
-          )}
-
-          {preset === "custom" && (
-            <div className="flex flex-col gap-1">
+          </FormField>
+        );
+      case "weekly":
+        return (
+          <DialogFieldGrid className="items-end">
+            <FormField label={labels.fields.time} className="min-w-0">
+              <Input
+                type="time"
+                className={fieldInputClass}
+                value={`${pad2(parts.hour ?? 9)}:${pad2(parts.minute ?? 0)}`}
+                onChange={(e) => {
+                  const [h, m] = e.target.value.split(":").map(Number);
+                  updateParts({ hour: h, minute: m });
+                }}
+              />
+            </FormField>
+            <FormField label={labels.fields.weekday} className="min-w-0">
+              <ToggleGroupControl
+                type="multiple"
+                scrollable
+                className="flex-nowrap"
+                value={parts.weekdays ?? ["mon"]}
+                onValueChange={(values) => {
+                  setParts((prev) => ({
+                    ...prev,
+                    weekdays: WEEKDAYS.filter((d) => values.includes(d)),
+                  }));
+                }}
+                items={WEEKDAYS.map((w) => ({
+                  value: w,
+                  label: labels.weekdays[w],
+                  ariaLabel: labels.weekdays[w],
+                }))}
+              />
+            </FormField>
+          </DialogFieldGrid>
+        );
+      case "monthly":
+        return (
+          <DialogFieldGrid>
+            <FormField label={labels.fields.dayOfMonth} className="min-w-0">
+              <Input
+                type="number"
+                min={1}
+                max={31}
+                className={fieldInputClass}
+                value={parts.dayOfMonth ?? 1}
+                onChange={(e) =>
+                  updateParts({ dayOfMonth: Number(e.target.value) })
+                }
+              />
+            </FormField>
+            <FormField label={labels.fields.time} className="min-w-0">
+              <Input
+                type="time"
+                className={fieldInputClass}
+                value={`${pad2(parts.hour ?? 9)}:${pad2(parts.minute ?? 0)}`}
+                onChange={(e) => {
+                  const [h, m] = e.target.value.split(":").map(Number);
+                  updateParts({ hour: h, minute: m });
+                }}
+              />
+            </FormField>
+          </DialogFieldGrid>
+        );
+      case "custom":
+        return (
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <span className="text-muted-foreground text-xs font-medium">
+              {labels.fields.cron}
+            </span>
+            <div className="flex min-w-0 items-center gap-3">
               <Input
                 value={parts.raw ?? ""}
+                className={cn(fieldInputClass, "font-mono shrink-0 text-xs")}
                 onChange={(e) => updateParts({ raw: e.target.value })}
                 placeholder={labels.fields.cronPlaceholder}
-                aria-label={labels.fields.cron}
               />
-              <a
-                href="https://crontab.guru/"
-                target="_blank"
-                rel="noreferrer"
-                className="text-muted-foreground text-xs hover:underline"
-              >
-                {labels.cronHelp} ↗
-              </a>
+              <CronExpressionFieldLegend
+                labels={[...labels.cronFieldLegend]}
+                className="min-w-0 flex-1 justify-start"
+              />
             </div>
-          )}
-        </>
-      ) : (
-        <Input
-          type="datetime-local"
-          value={runAtLocal}
-          onChange={(e) => setRunAtLocal(e.target.value)}
-          aria-label={labels.fields.runAt}
+          </div>
+        );
+      default:
+        return null;
+    }
+  })();
+
+  return (
+    <div className="flex min-w-0 flex-col gap-3" data-testid="schedule-input">
+      {!scheduleTypeLocked ? (
+        <ToggleGroupControl
+          value={scheduleType}
+          onValueChange={(value) => {
+            if (value === "cron" || value === "once") {
+              setScheduleType(value);
+            }
+          }}
+          items={[
+            { value: "cron", label: labels.scheduleType.cron },
+            { value: "once", label: labels.scheduleType.once },
+          ]}
         />
+      ) : null}
+
+      {scheduleType === "cron" ? (
+        <div className="flex flex-col gap-3">
+          <DialogFieldGrid className="items-start">
+            <FormField label={labels.preset.label} className="min-w-0">
+              <ToggleGroupControl
+                scrollable
+                data-testid="schedule-preset"
+                value={preset}
+                onValueChange={(value) => {
+                  if (PRESETS.includes(value as CronPreset)) {
+                    changePreset(value as CronPreset);
+                  }
+                }}
+                items={PRESETS.map((p) => ({
+                  value: p,
+                  label: labels.preset[p],
+                }))}
+              />
+            </FormField>
+            <ScheduleTimezoneSelect
+              timezone={timezone}
+              onTimezoneChange={setTimezone}
+              fieldClassName="min-w-0"
+            />
+          </DialogFieldGrid>
+          {cronPresetDetails}
+        </div>
+      ) : (
+        <DialogFieldGrid className="items-start">
+          <FormField
+            label={labels.fields.runAt}
+            htmlFor="schedule-run-at"
+            className="min-w-0"
+          >
+            <Input
+              id="schedule-run-at"
+              type="datetime-local"
+              className={fieldInputClass}
+              value={runAtLocal}
+              onChange={(e) => setRunAtLocal(e.target.value)}
+            />
+          </FormField>
+          <ScheduleTimezoneSelect
+            timezone={timezone}
+            onTimezoneChange={setTimezone}
+            fieldClassName="min-w-0"
+          />
+        </DialogFieldGrid>
       )}
 
-      <Select value={timezone} onValueChange={setTimezone}>
-        <SelectTrigger className="w-full" data-testid="schedule-timezone">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {TIMEZONE_OPTIONS.map((tzOption) => (
-            <SelectItem key={tzOption} value={tzOption}>
-              {tzOption}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
       <div
-        className="text-muted-foreground text-sm"
+        className={cn(
+          readOnlyFieldClass,
+          "text-muted-foreground flex min-h-7 items-center gap-2 py-1 text-xs",
+        )}
         data-testid="schedule-preview"
       >
-        {preview}
+        <span className="text-foreground/70 shrink-0 text-xs font-medium">
+          {labels.preview}
+        </span>
+        <span className="min-w-0 flex-1 tabular-nums">{preview}</span>
       </div>
     </div>
   );
