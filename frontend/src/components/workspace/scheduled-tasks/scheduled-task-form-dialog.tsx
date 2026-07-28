@@ -210,7 +210,7 @@ export function ScheduledTaskFormDialog({
         }
       >
         <div
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-4 px-1"
           data-testid={
             isCreate ? "scheduled-task-create-form" : "scheduled-task-edit-form"
           }

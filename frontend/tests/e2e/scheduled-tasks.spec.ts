@@ -133,10 +133,24 @@ test("scheduled task forms use plain sections and a fixed prompt resize mode", a
   const createForm = page.getByTestId("scheduled-task-create-form");
   await expect(createForm.getByTestId("schedule-recipes")).toHaveCount(0);
   await expect(createForm.locator('[data-slot="card"]')).toHaveCount(0);
-  await expect(createForm.getByRole("textbox", { name: "Prompt" })).toHaveCSS(
-    "resize",
-    "none",
-  );
+  const createPrompt = createForm.getByRole("textbox", { name: "Prompt" });
+  await expect(createPrompt).toHaveCSS("resize", "none");
+  await createPrompt.focus();
+  await expect(createPrompt).toHaveCSS("box-shadow", /0px 0px 0px 3px/);
+  const createFocusClearance = await createPrompt.evaluate((element) => {
+    const scroller =
+      element.parentElement?.closest<HTMLElement>(".overflow-y-auto");
+    if (!scroller) return null;
+    const fieldBounds = element.getBoundingClientRect();
+    const scrollerBounds = scroller.getBoundingClientRect();
+    return {
+      left: fieldBounds.left - scrollerBounds.left,
+      right: scrollerBounds.right - fieldBounds.right,
+    };
+  });
+  expect(createFocusClearance).not.toBeNull();
+  expect(createFocusClearance!.left).toBeGreaterThanOrEqual(3);
+  expect(createFocusClearance!.right).toBeGreaterThanOrEqual(3);
   await page.keyboard.press("Escape");
   await expect(createForm).toBeHidden();
 
@@ -151,10 +165,23 @@ test("scheduled task forms use plain sections and a fixed prompt resize mode", a
 
   const editForm = page.getByTestId("scheduled-task-edit-form");
   await expect(editForm.locator('[data-slot="card"]')).toHaveCount(0);
-  await expect(editForm.getByRole("textbox", { name: "Prompt" })).toHaveCSS(
-    "resize",
-    "none",
-  );
+  const editPrompt = editForm.getByRole("textbox", { name: "Prompt" });
+  await expect(editPrompt).toHaveCSS("resize", "none");
+  await editPrompt.focus();
+  const editFocusClearance = await editPrompt.evaluate((element) => {
+    const scroller =
+      element.parentElement?.closest<HTMLElement>(".overflow-y-auto");
+    if (!scroller) return null;
+    const fieldBounds = element.getBoundingClientRect();
+    const scrollerBounds = scroller.getBoundingClientRect();
+    return {
+      left: fieldBounds.left - scrollerBounds.left,
+      right: scrollerBounds.right - fieldBounds.right,
+    };
+  });
+  expect(editFocusClearance).not.toBeNull();
+  expect(editFocusClearance!.left).toBeGreaterThanOrEqual(3);
+  expect(editFocusClearance!.right).toBeGreaterThanOrEqual(3);
 });
 
 test("user can pause a scheduled task from the detail pane", async ({
